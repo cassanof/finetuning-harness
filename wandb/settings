@@ -1,0 +1,5 @@
+[default]
+entity = federico-cassano
+project = roblox
+base_url = https://api.wandb.ai
+
