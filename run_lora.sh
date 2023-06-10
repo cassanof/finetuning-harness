@@ -19,7 +19,7 @@ python3 train.py \
         --save_freq 5000 \
         --streaming \
         --log_freq 1 \
-        --num_workers=16 \
+        --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
         --lora \
