@@ -5,8 +5,8 @@ accelerate launch ./bigcode-evaluation-harness/main.py \
   --max_length_generation 1024 \
   --temperature 0.5 \
   --do_sample True \
-  --n_samples 1 \
-  --batch_size 1 \
+  --n_samples 10 \
+  --batch_size 10 \
   --trust_remote_code \
   --allow_code_execution \
   --save_generations
