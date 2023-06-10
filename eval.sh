@@ -1,6 +1,6 @@
 accelerate launch ./bigcode-evaluation-harness/main.py \
   --model bigcode/santacoder \
-  --tasks humaneval \
+  --tasks multiple-lua \
   --revision main \
   --max_length_generation 1024 \
   --temperature 0.5 \
