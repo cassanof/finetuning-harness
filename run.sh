@@ -10,9 +10,9 @@ python3 train.py \
         --split="train" \
         --output_dir="./model_normal" \
         --seq_length 2048 \
-        --max_steps 4000 \
+        --max_steps 5000 \
         --batch_size 16 \
-        --gradient_accumulation_steps 8 \
+        --gradient_accumulation_steps 1 \
         --learning_rate 5e-5 \
         --num_warmup_steps 100 \
         --eval_freq 500 \
