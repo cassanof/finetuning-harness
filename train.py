@@ -325,6 +325,7 @@ def main(args):
         use_auth_token=True
     )
     load_special_tokens(tokenizer)
+    print(tokenizer.special_tokens_map)
 
     train_dataset, eval_dataset = create_datasets(tokenizer, args)
 
