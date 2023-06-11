@@ -9,8 +9,8 @@ python3 -m torch.distributed.launch \
         --split="train" \
         --output_dir="./model_lora" \
         --seq_length 2048 \
-        --max_steps 8000 \
-        --batch_size 32 \
+        --max_steps 16000 \
+        --batch_size 16 \
         --gradient_accumulation_steps 1 \
         --learning_rate 1e-4 \
         --num_warmup_steps 100 \
