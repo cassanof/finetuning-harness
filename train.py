@@ -232,7 +232,8 @@ def create_datasets(tokenizer, args):
 
 
 def run_training(args, train_data, val_data):
-    print("Loading the model")
+    p_index = Accelerator().process_index
+    print(f"Loading the model. Process index: {p_index}")
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
@@ -240,7 +241,7 @@ def run_training(args, train_data, val_data):
         trust_remote_code=True,
         load_in_8bit=True,  # TODO: figure out if this should only lhappen for LoRA
         use_cache=not args.no_gradient_checkpointing,
-        device_map={"": Accelerator().process_index},
+        device_map={"": p_index},
     )
 
     # TODO: figure out if this should only lhappen for LoRA
