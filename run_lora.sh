@@ -10,8 +10,8 @@ python3 -m torch.distributed.launch \
         --output_dir="./model_lora" \
         --seq_length 2048 \
         --max_steps 16000 \
-        --batch_size 16 \
-        --gradient_accumulation_steps 1 \
+        --batch_size 1 \
+        --gradient_accumulation_steps 16 \
         --learning_rate 5e-5 \
         --num_warmup_steps 100 \
         --eval_freq 500 \

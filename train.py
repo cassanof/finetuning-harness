@@ -289,8 +289,7 @@ def run_training(args, train_data, val_data):
         weight_decay=args.weight_decay,
         run_name=f"santacoder-{args.subset}",
         report_to=["wandb"],
-        # TODO: starcoder sets this
-        # ddp_find_unused_parameters=False,
+        ddp_find_unused_parameters=not args.lora, # we want to use all parameters in LoRA
     )
 
     if (args.local_rank == 0 or args.local_rank == -1):
