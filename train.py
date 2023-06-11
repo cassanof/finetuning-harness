@@ -73,6 +73,7 @@ def get_args():
     parser.add_argument("--save_strategy", type=str, default="steps")
     parser.add_argument("--save_total_limit", type=int, default=10)
     parser.add_argument("--push_to_hub", action="store_true", default=False)
+    parser.add_argument("--local-rank", type=int, default=0)
 
     return parser.parse_args()
 
@@ -291,7 +292,8 @@ def run_training(args, train_data, val_data):
         # ddp_find_unused_parameters=False,
     )
 
-    wandb.init(project="roblox")
+    if (args.local_rank == 0 or args.local_rank == -1):
+        wandb.init(project="roblox")
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data
