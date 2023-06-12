@@ -19,6 +19,7 @@ def main():
     base_model = AutoModelForCausalLM.from_pretrained(
         args.base_model_name_or_path,
         return_dict=True,
+        trust_remote_code=True,
         torch_dtype=torch.float16 
     )
 
