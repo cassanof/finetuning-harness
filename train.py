@@ -363,11 +363,9 @@ def load_special_tokens(tokenizer):
 
 def main(args):
     tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-        args.model_path,
-        revision=args.model_revision,
-        use_auth_token=True
+            "./tokenizer_files"
     )
-    load_special_tokens(tokenizer)
+    #load_special_tokens(tokenizer)
     print(tokenizer.special_tokens_map)
 
     train_dataset, eval_dataset = create_datasets(tokenizer, args)
