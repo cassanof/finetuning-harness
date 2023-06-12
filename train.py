@@ -81,7 +81,6 @@ def get_args():
     parser.add_argument("--data_column", type=str, default="content")
 
     parser.add_argument("--lora", action="store_true")
-    # TODO: i copied these from starcoder, not sure if they work well for santacoder
     parser.add_argument("--lora_r", type=int, default=16)
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
@@ -280,12 +279,11 @@ def run_training(args, train_data, val_data):
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
-        load_in_8bit=True,  # TODO: figure out if this should only lhappen for LoRA
+        load_in_8bit=True,
         use_cache=not args.no_gradient_checkpointing,
         device_map={"": p_index},
     )
 
-    # TODO: figure out if this should only lhappen for LoRA
     prepare_model_for_int8_training(model)
     train_data.start_iteration = 0
 
