@@ -18,12 +18,53 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedTokenizer,
+    TrainerState,
+    TrainerControl,
+    TrainerCallback,
     Trainer,
     TrainingArguments,
     logging,
     set_seed,
 )
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 from accelerate import Accelerator
+
+
+class SavePeftModelCallback(TrainerCallback):
+    def on_save(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs,
+    ):
+        checkpoint_folder = os.path.join(
+            args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
+
+        kwargs["model"].save_pretrained(checkpoint_folder)
+
+        pytorch_model_path = os.path.join(
+            checkpoint_folder, "pytorch_model.bin")
+        torch.save({}, pytorch_model_path)
+        return control
+
+
+class LoadBestPeftModelCallback(TrainerCallback):
+    def on_train_end(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs,
+    ):
+        print(
+            f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
+        best_model_path = os.path.join(
+            state.best_model_checkpoint, "adapter_model.bin")
+        adapters_weights = torch.load(best_model_path)
+        model = kwargs["model"]
+        set_peft_model_state_dict(model, adapters_weights)
+        return control
 
 
 def get_args():
@@ -289,14 +330,19 @@ def run_training(args, train_data, val_data):
         weight_decay=args.weight_decay,
         run_name=f"santacoder-{args.subset}",
         report_to=["wandb"],
-        ddp_find_unused_parameters=not args.lora, # we want to use all parameters in LoRA
+        # we want to use all parameters in LoRA
+        ddp_find_unused_parameters=not args.lora,
     )
 
     if (args.local_rank == 0 or args.local_rank == -1):
         wandb.init(project="roblox")
 
+    callbacks = []
+    if args.lora:
+        callbacks = [SavePeftModelCallback, LoadBestPeftModelCallback]
+
     trainer = Trainer(
-        model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data
+        model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, callbacks=callbacks
     )
 
     print("Training...")
