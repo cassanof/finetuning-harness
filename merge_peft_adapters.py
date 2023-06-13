@@ -7,9 +7,9 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_model_name_or_path", type=str, default="bigcode/large-model")
+    parser.add_argument("--base_model_name_or_path", type=str, default="bigcode/gpt_bigcode-santacoder")
     parser.add_argument("--peft_model_path", type=str, default="/")
-    parser.add_argument("--push_to_hub", action="store_true", default=True)
+    parser.add_argument("--push_to_hub", action="store_true")
 
     return parser.parse_args()
 
