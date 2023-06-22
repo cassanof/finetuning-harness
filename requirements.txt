@@ -1,8 +1,7 @@
-git+https://github.com/huggingface/transformers.git@12313838d33373d06d35b48c3c501fa832f16443
-datasets==2.7.0
-wandb==0.13.1
-huggingface-hub==0.11.0
-tree_sitter==0.20.1
-peft==0.3.0
-accelerate=0.19.0
+transformers
+datasets
+wandb
+huggingface-hub
+peft
+accelerate
 bitsandbytes
