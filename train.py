@@ -49,24 +49,6 @@ class SavePeftModelCallback(TrainerCallback):
         return control
 
 
-class LoadBestPeftModelCallback(TrainerCallback):
-    def on_train_end(
-        self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
-        **kwargs,
-    ):
-        print(
-            f"Loading best peft model from {state.best_model_checkpoint} (score: {state.best_metric}).")
-        best_model_path = os.path.join(
-            state.best_model_checkpoint, "adapter_model.bin")
-        adapters_weights = torch.load(best_model_path)
-        model = kwargs["model"]
-        set_peft_model_state_dict(model, adapters_weights)
-        return control
-
-
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default="bigcode/santacoder")
@@ -76,6 +58,7 @@ def get_args():
     parser.add_argument("--subset", type=str, default="data")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--size_valid_set", type=int, default=4000)
+    parser.add_argument("--perc_valid_set", type=float, default=0.005)
     parser.add_argument("--streaming", action="store_true")
     parser.add_argument("--shuffle_buffer", type=int, default=5000)
     parser.add_argument("--data_column", type=str, default="content")
@@ -114,6 +97,7 @@ def get_args():
     parser.add_argument("--save_total_limit", type=int, default=10)
     parser.add_argument("--push_to_hub", action="store_true", default=False)
     parser.add_argument("--local-rank", type=int, default=0)
+    parser.add_argument("--no_custom_tokenizer", action="store_true")
 
     return parser.parse_args()
 
@@ -239,7 +223,7 @@ def create_datasets(tokenizer, args):
             buffer_size=args.shuffle_buffer, seed=args.seed)
     else:
         dataset = dataset.train_test_split(  # type: ignore
-            test_size=0.005, seed=args.seed)
+            test_size=args.perc_valid_set, seed=args.seed)
         train_data = dataset["train"]
         valid_data = dataset["test"]
         print(
@@ -272,22 +256,21 @@ def create_datasets(tokenizer, args):
 
 
 def run_training(args, train_data, val_data):
-    p_index = Accelerator().process_index
-    print(f"Loading the model. Process index: {p_index}")
+    print(f"Loading the model.")
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
-        load_in_8bit=True,
+        load_in_8bit=args.lora,
         use_cache=not args.no_gradient_checkpointing,
-        device_map={"": p_index},
+        device_map={"": Accelerator().process_index} if args.lora else None,
     )
 
-    prepare_model_for_int8_training(model)
     train_data.start_iteration = 0
 
     if args.lora:
+        prepare_model_for_int8_training(model)
         lora_config = LoraConfig(
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
@@ -326,7 +309,7 @@ def run_training(args, train_data, val_data):
         fp16=args.no_fp16,
         bf16=args.bf16,
         weight_decay=args.weight_decay,
-        run_name=f"santacoder-{args.subset}",
+        run_name=f"{args.model_path.replace('/', '_')}",
         report_to=["wandb"],
         # we want to use all parameters in LoRA
         ddp_find_unused_parameters=not args.lora,
@@ -337,7 +320,7 @@ def run_training(args, train_data, val_data):
 
     callbacks = []
     if args.lora:
-        callbacks = [SavePeftModelCallback, LoadBestPeftModelCallback]
+        callbacks = [SavePeftModelCallback]
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, callbacks=callbacks
@@ -362,10 +345,17 @@ def load_special_tokens(tokenizer):
 
 
 def main(args):
-    tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+    if args.no_custom_tokenizer:
+        tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+            args.model_path,
+            revision=args.model_revision,
+        )
+    else:
+        tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             "./tokenizer_files"
-    )
-    #load_special_tokens(tokenizer)
+        )
+        load_special_tokens(tokenizer)
+
     print(tokenizer.special_tokens_map)
 
     train_dataset, eval_dataset = create_datasets(tokenizer, args)
