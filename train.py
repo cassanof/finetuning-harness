@@ -210,6 +210,7 @@ class ConstantLengthDataset(IterableDataset):
 def create_datasets(tokenizer, args):
     dataset = load_dataset(
         args.dataset_name,
+        revision=args.dataset_revision,
         data_dir=args.subset,
         split=args.split,
         use_auth_token=True,
@@ -349,7 +350,7 @@ def main(args):
     if args.no_custom_tokenizer:
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             args.model_path,
-            revision=args.dataset_revision,
+            revision=args.model_revision,
         )
     else:
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
