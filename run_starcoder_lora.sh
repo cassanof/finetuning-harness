@@ -11,8 +11,8 @@ python3 -m torch.distributed.launch \
         --split="train" \
         --output_dir="./model_starcoder_lora" \
         --seq_length 2048 \
-        --max_steps 700 \
-        --batch_size 16 \
+        --max_steps 1400 \
+        --batch_size 8 \
         --gradient_accumulation_steps 1 \
         --learning_rate 1e-4 \
         --num_warmup_steps 100 \
