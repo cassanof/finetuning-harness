@@ -55,6 +55,7 @@ def get_args():
     parser.add_argument("--model_revision", type=str, default="main")
     parser.add_argument("--dataset_name", type=str,
                         default="bigcode/santacoder")
+    parser.add_argument("--dataset_revision", type=str, default="main")
     parser.add_argument("--subset", type=str, default="data")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--size_valid_set", type=int, default=4000)
@@ -348,7 +349,7 @@ def main(args):
     if args.no_custom_tokenizer:
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             args.model_path,
-            revision=args.model_revision,
+            revision=args.dataset_revision,
         )
     else:
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(

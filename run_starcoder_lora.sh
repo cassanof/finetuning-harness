@@ -3,8 +3,9 @@ python3 -m torch.distributed.launch \
         --nproc_per_node 8 train.py \
         --model_path="bigcode/starcoderbase" \
         --no_custom_tokenizer \
-        --model_revision="top_10000" \
+        --model_revision="main" \
         --dataset_name="cassanof/starcoderdata-lua-ranked" \
+        --dataset_revision="top_10000" \
         --subset="data" \
         --data_column "content" \
         --split="train" \
