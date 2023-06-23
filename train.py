@@ -99,6 +99,8 @@ def get_args():
     parser.add_argument("--push_to_hub", action="store_true", default=False)
     parser.add_argument("--local-rank", type=int, default=0)
     parser.add_argument("--no_custom_tokenizer", action="store_true")
+    parser.add_argument("--humaneval_eval_loss", action="store_true")
+    parser.add_argument("--no_shuffle_train", action="store_true")
 
     return parser.parse_args()
 
@@ -181,16 +183,21 @@ class ConstantLengthDataset(IterableDataset):
             tokenized_inputs = self.tokenizer(
                 buffer, truncation=False)["input_ids"]
             all_token_ids = []
+            examples = []
             for tokenized_input in tokenized_inputs:
                 all_token_ids.extend(tokenized_input + [self.concat_token_id])
             for i in range(0, len(all_token_ids), self.seq_length):
                 input_ids = all_token_ids[i: i + self.seq_length]
                 if len(input_ids) == self.seq_length:
-                    self.current_size += 1
-                    yield {
-                        "input_ids": torch.LongTensor(input_ids),
-                        "labels": torch.LongTensor(input_ids),
-                    }
+                    examples.append(input_ids)
+
+            random.shuffle(examples)
+            for input_ids in examples:
+                self.current_size += 1
+                yield {
+                    "input_ids": torch.LongTensor(input_ids),
+                    "labels": torch.LongTensor(input_ids),
+                }
 
 
 def create_datasets(tokenizer, args):
@@ -203,17 +210,34 @@ def create_datasets(tokenizer, args):
         num_proc=args.num_workers if not args.streaming else None,
         streaming=args.streaming,
     )
+
+    eval_dataset = None
+    if args.humaneval_eval_loss:
+        eval_dataset = load_dataset("nuprl/MultiPL-E-synthetic-solutions", split="train") \
+            .filter(lambda example: example["language"] == "lua") \
+            .map(lambda example: {"content": example["prompt"] + example["solution"]})
+
     if args.streaming:
         print("Loading the dataset in streaming mode")
-        valid_data = dataset.take(args.size_valid_set)  # type: ignore
-        train_data = dataset.skip(args.size_valid_set)  # type: ignore
+        if args.humaneval_eval_loss:
+            raise ValueError(
+                "TODO Streaming mode is not supported for humaneval_eval_loss"
+            )
+        else:
+            valid_data = dataset.take(args.size_valid_set)  # type: ignore
+            train_data = dataset.skip(args.size_valid_set)  # type: ignore
         train_data = train_data.shuffle(
             buffer_size=args.shuffle_buffer, seed=args.seed)
     else:
-        dataset = dataset.train_test_split(  # type: ignore
-            test_size=args.perc_valid_set, seed=args.seed)
-        train_data = dataset["train"]
-        valid_data = dataset["test"]
+        if args.humaneval_eval_loss:
+            valid_data = eval_dataset
+            train_data = dataset if args.no_shuffle_train else dataset.shuffle(
+                seed=args.seed)
+        else:
+            dataset = dataset.train_test_split(  # type: ignore
+                test_size=args.perc_valid_set, seed=args.seed)
+            train_data = dataset["train"]
+            valid_data = dataset["test"]
         print(
             f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}"
         )
