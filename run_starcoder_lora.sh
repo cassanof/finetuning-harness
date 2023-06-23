@@ -16,7 +16,6 @@ python3 -m torch.distributed.launch \
         --gradient_accumulation_steps 1 \
         --learning_rate 1e-4 \
         --num_warmup_steps 100 \
-        --perc_valid_set 0.1 \
         --eval_freq 100 \
         --save_freq 100 \
         --log_freq 1 \
@@ -26,4 +25,5 @@ python3 -m torch.distributed.launch \
         --lora \
         --lora_r 32 \
         --lora_alpha 32 \
-        --lora_dropout 0.1
+        --lora_dropout 0.1 \
+        --humaneval_eval_loss
