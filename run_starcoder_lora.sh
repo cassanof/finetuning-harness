@@ -16,7 +16,7 @@ python3 -m torch.distributed.launch \
         --gradient_accumulation_steps 1 \
         --learning_rate 1e-4 \
         --num_warmup_steps 100 \
-        --eval_freq 100 \
+        --eval_freq 50 \
         --save_freq 100 \
         --log_freq 1 \
         --num_workers=$(expr $(nproc --all) - 4) \
