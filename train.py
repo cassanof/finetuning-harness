@@ -100,6 +100,7 @@ def get_args():
     parser.add_argument("--local-rank", type=int, default=0)
     parser.add_argument("--no_custom_tokenizer", action="store_true")
     parser.add_argument("--humaneval_eval_loss", action="store_true")
+    parser.add_argument("--eval_reruns", type=int, default=1)
     parser.add_argument("--no_shuffle_train", action="store_true")
 
     return parser.parse_args()
@@ -153,6 +154,7 @@ class ConstantLengthDataset(IterableDataset):
         num_of_sequences=1024,
         chars_per_token=3.6,
         content_field="content",
+        reruns=1,
     ):
         self.tokenizer = tokenizer
         self.concat_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else args.eos_token_id
@@ -162,10 +164,12 @@ class ConstantLengthDataset(IterableDataset):
         self.current_size = 0
         self.max_buffer_size = seq_length * chars_per_token * num_of_sequences
         self.content_field = content_field
+        self.reruns = reruns
 
     def __iter__(self):
         iterator = iter(self.dataset)
         more_examples = True
+        reruns = self.reruns
         while more_examples:
             buffer, buffer_len = [], 0
             while True:
@@ -175,8 +179,9 @@ class ConstantLengthDataset(IterableDataset):
                     buffer.append(next(iterator)[self.content_field])
                     buffer_len += len(buffer[-1])
                 except StopIteration:
-                    if self.infinite:
+                    if self.infinite or reruns > 0:
                         iterator = iter(self.dataset)
+                        reruns -= 1
                     else:
                         more_examples = False
                         break
@@ -260,6 +265,7 @@ def create_datasets(tokenizer, args):
         seq_length=args.seq_length,
         chars_per_token=chars_per_token,
         content_field=args.data_column,
+        reruns=args.eval_reruns,
     )
 
     return train_dataset, valid_dataset

@@ -26,4 +26,5 @@ python3 -m torch.distributed.launch \
         --lora_r 32 \
         --lora_alpha 32 \
         --lora_dropout 0.1 \
-        --humaneval_eval_loss
+        --humaneval_eval_loss \
+        --eval_reruns 30 
