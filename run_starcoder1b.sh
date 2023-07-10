@@ -11,13 +11,13 @@ python3 -m torch.distributed.launch \
         --split="train" \
         --output_dir="./model_starcoder1b" \
         --seq_length 2048 \
-        --max_steps 300 \
         --batch_size 16 \
         --gradient_accumulation_steps 1 \
         --learning_rate 5e-5 \
-        --num_warmup_steps 20 \
-        --eval_freq 25 \
-        --save_freq 50 \
+        --max_steps 70 \
+        --num_warmup_steps 5 \
+        --eval_freq 5 \
+        --save_freq 5 \
         --log_freq 1 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
