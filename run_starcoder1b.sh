@@ -9,12 +9,12 @@ python3 -m torch.distributed.launch \
         --lang="py" \
         --data_column "content" \
         --split="train" \
-        --output_dir="./model_starcoder1b_lora" \
+        --output_dir="./model_starcoder1b" \
         --seq_length 2048 \
         --max_steps 1400 \
         --batch_size 16 \
         --gradient_accumulation_steps 1 \
-        --learning_rate 1e-4 \
+        --learning_rate 5e-5 \
         --num_warmup_steps 30 \
         --eval_freq 50 \
         --save_freq 100 \
@@ -22,9 +22,5 @@ python3 -m torch.distributed.launch \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
-        --lora \
-        --lora_r 32 \
-        --lora_alpha 32 \
-        --lora_dropout 0.1 \
         --humaneval_eval_loss \
         --eval_reruns 30 
