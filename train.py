@@ -79,6 +79,7 @@ def get_args():
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
+    parser.add_argument("--lang", type=str, default="lua")
 
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--no_fp16", action="store_false")
@@ -219,7 +220,7 @@ def create_datasets(tokenizer, args):
     eval_dataset = None
     if args.humaneval_eval_loss:
         eval_dataset = load_dataset("nuprl/MultiPL-E-synthetic-solutions", split="train") \
-            .filter(lambda example: example["language"] == "lua") \
+            .filter(lambda example: example["language"] == args.lang) \
             .map(lambda example: {"content": example["prompt"] + example["solution"]})
 
     if args.streaming:
