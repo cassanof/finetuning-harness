@@ -328,8 +328,7 @@ def run_training(args, train_data, val_data):
         weight_decay=args.weight_decay,
         run_name=f"{args.model_path.replace('/', '_')}",
         report_to=["wandb"],
-        # we want to use all parameters in LoRA
-        ddp_find_unused_parameters=not args.lora,
+        ddp_find_unused_parameters=False,
     )
 
     if (args.local_rank == 0 or args.local_rank == -1):
