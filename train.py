@@ -282,7 +282,8 @@ def run_training(args, train_data, val_data):
         trust_remote_code=True,
         load_in_8bit=args.lora or args.load_in_8bit,
         use_cache=not args.no_gradient_checkpointing,
-        device_map={"": Accelerator().process_index} if args.lora else None,
+        device_map={
+            "": Accelerator().process_index} if args.lora or args.load_in_8bit else None,
     )
 
     train_data.start_iteration = 0
