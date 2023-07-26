@@ -135,6 +135,20 @@ def print_trainable_parameters(model):
     )
 
 
+def find_all_linear_names(model):
+    import bitsandbytes as bnb
+    cls = bnb.nn.Linear8bitLt
+    lora_module_names = set()
+    for name, module in model.named_modules():
+        if isinstance(module, cls):
+            names = name.split('.')
+            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+
+    if 'lm_head' in lora_module_names:  # needed for 16-bit
+        lora_module_names.remove('lm_head')
+    return list(lora_module_names)
+
+
 class ConstantLengthDataset(IterableDataset):
     """
     Iterable dataset that returns constant length chunks of tokens from stream of text files.
@@ -292,6 +306,9 @@ def run_training(args, train_data, val_data):
         print("!!! Using LoRA")
         prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
+        all_linear_layers = find_all_linear_names(model)
+        print(f"Found {len(all_linear_layers)} linear layers")
+        print(all_linear_layers)
         lora_config = LoraConfig(
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
