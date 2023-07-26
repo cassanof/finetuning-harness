@@ -12,7 +12,7 @@ import torch
 import random
 from datasets.load import load_dataset
 from torch.utils.data import IterableDataset
-from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, set_peft_model_state_dict
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
@@ -290,12 +290,13 @@ def run_training(args, train_data, val_data):
 
     if args.lora:
         print("!!! Using LoRA")
-        prepare_model_for_int8_training(model)
+        prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
         lora_config = LoraConfig(
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
-            bias="all",
+            bias="none",
             task_type="CAUSAL_LM",
             target_modules=["c_proj", "c_attn", "q_attn", "q_proj",
                             "k_proj", "v_proj", "out_proj", "fc_in", "fc_out", "wte"]
