@@ -84,6 +84,7 @@ def get_args():
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--no_fp16", action="store_false")
     parser.add_argument("--bf16", action="store_true")
+    parser.add_argument("--load_in_8bit", action="store_true")
     parser.add_argument("--no_gradient_checkpointing", action="store_false")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_workers", type=int, default=None)
@@ -279,7 +280,7 @@ def run_training(args, train_data, val_data):
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
-        load_in_8bit=args.lora,
+        load_in_8bit=args.lora or args.load_in_8bit,
         use_cache=not args.no_gradient_checkpointing,
         device_map={"": Accelerator().process_index} if args.lora else None,
     )

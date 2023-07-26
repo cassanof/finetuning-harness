@@ -11,8 +11,8 @@ python3 -m torch.distributed.launch \
         --output_dir="./model_starcoder_lua50k" \
         --seq_length 2048 \
         --max_steps 1000 \
-        --batch_size 2 \
-        --gradient_accumulation_steps 4 \
+        --batch_size 1 \
+        --gradient_accumulation_steps 8 \
         --learning_rate 2e-5 \
         --num_warmup_steps 15 \
         --eval_freq 50 \
@@ -21,5 +21,6 @@ python3 -m torch.distributed.launch \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
+        --load_in_8bit \
         --perc_valid_set 0.01 \
         --save_total_limit 20
