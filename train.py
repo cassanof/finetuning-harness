@@ -319,7 +319,7 @@ def run_training(args, train_data, val_data):
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         gradient_checkpointing=args.no_gradient_checkpointing,
         hub_strategy=args.hub_strategy,
-        save_total_limit=args.save_total_limit,
+        save_total_limit=99999 if args.lora else args.save_total_limit,
         hub_model_id=args.hub_model_id,
         save_strategy=args.save_strategy,
         push_to_hub=args.push_to_hub,
