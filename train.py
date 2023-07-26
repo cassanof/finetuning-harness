@@ -147,7 +147,7 @@ def find_all_linear_names(model):
 
     if 'lm_head' in lora_module_names:  # needed for 16-bit
         lora_module_names.remove('lm_head')
-    return list(lora_module_names)
+    return lora_module_names
 
 
 class ConstantLengthDataset(IterableDataset):
@@ -308,8 +308,8 @@ def run_training(args, train_data, val_data):
         prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
         all_linear_layers = find_all_linear_names(model)
-        modules = list(set(all_linear_layers + [
-            ["c_proj", "c_attn", "q_attn"]]))
+        added_modules = set(["c_proj", "c_attn", "q_attn"])
+        modules = list(added_modules.union(all_linear_layers))
         print(f"Target modules: {modules}")
         lora_config = LoraConfig(
             r=args.lora_r,
