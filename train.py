@@ -295,7 +295,7 @@ def run_training(args, train_data, val_data):
             r=args.lora_r,
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
-            bias="none",
+            bias="all",
             task_type="CAUSAL_LM",
             target_modules=["c_proj", "c_attn", "q_attn", "q_proj",
                             "k_proj", "v_proj", "out_proj", "fc_in", "fc_out", "wte"]
