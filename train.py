@@ -335,7 +335,7 @@ def run_training(args, train_data, val_data):
 
         model.enable_input_require_grads()
         model = get_peft_model(model, lora_config)
-        hacky_model_convert(model)
+        hacky_model_convert(args, model)
         
 
     print_trainable_parameters(model)
