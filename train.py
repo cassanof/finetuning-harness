@@ -281,7 +281,6 @@ def run_training(args, train_data, val_data):
         revision=args.model_revision,
         trust_remote_code=True,
         load_in_8bit=args.lora or args.load_in_8bit,
-        torch_dtype=torch.float16,
         use_cache=not args.no_gradient_checkpointing,
         device_map={
             "": Accelerator().process_index} if args.lora or args.load_in_8bit else None,
@@ -290,6 +289,7 @@ def run_training(args, train_data, val_data):
     train_data.start_iteration = 0
 
     if args.lora:
+        print("!!! Using LoRA")
         prepare_model_for_int8_training(model)
         lora_config = LoraConfig(
             r=args.lora_r,
