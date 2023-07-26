@@ -22,7 +22,7 @@ python3 -m torch.distributed.launch \
         --no_fp16 \
         --bf16 \
         --lora \
-        --lora_r 16 \
+        --lora_r 32 \
         --lora_alpha 32 \
         --lora_dropout 0.1 \
         --perc_valid_set 0.05
