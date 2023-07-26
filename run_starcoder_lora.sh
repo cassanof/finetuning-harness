@@ -25,4 +25,4 @@ python3 -m torch.distributed.launch \
         --lora_r 32 \
         --lora_alpha 32 \
         --lora_dropout 0.1 \
-        --perc_eval_set 0.05
+        --perc_valid_set 0.05
