@@ -11,8 +11,8 @@ python3 -m torch.distributed.launch \
         --output_dir="./model_starcoder_lora_lua50k" \
         --seq_length 2048 \
         --max_steps 700 \
-        --batch_size 16 \
-        --gradient_accumulation_steps 1 \
+        --batch_size 4 \
+        --gradient_accumulation_steps 4 \
         --learning_rate 0.0002 \
         --num_warmup_steps 10 \
         --eval_freq 25 \
