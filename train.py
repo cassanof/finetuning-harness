@@ -7,6 +7,7 @@ import os
 
 import numpy as np
 import json
+import peft
 import wandb
 import torch
 import random
@@ -147,6 +148,19 @@ def find_all_linear_names(model):
     if 'lm_head' in lora_module_names:  # needed for 16-bit
         lora_module_names.remove('lm_head')
     return list(lora_module_names)
+
+
+def manual_convert(model):
+    for name, module in model.named_modules():
+        if isinstance(module, peft.tuners.lora.LoraLayer):
+            if args.bf16:
+                module = module.to(torch.bfloat16)
+        if 'norm' in name:
+            module = module.to(torch.float32)
+        if 'lm_head' in name or 'embed_tokens' in name:
+            if hasattr(module, 'weight'):
+                if args.bf16 and module.weight.dtype == torch.float32:
+                    module = module.to(torch.bfloat16)
 
 
 class ConstantLengthDataset(IterableDataset):
@@ -307,7 +321,6 @@ def run_training(args, train_data, val_data):
         prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
         all_linear_layers = find_all_linear_names(model)
-        print(f"Found {len(all_linear_layers)} linear layers")
         print(all_linear_layers)
         lora_config = LoraConfig(
             r=args.lora_r,
@@ -315,11 +328,11 @@ def run_training(args, train_data, val_data):
             lora_dropout=args.lora_dropout,
             bias="none",
             task_type="CAUSAL_LM",
-            target_modules=["c_proj", "c_attn", "q_attn", "q_proj",
-                            "k_proj", "v_proj", "out_proj", "fc_in", "fc_out", "wte"]
+            target_modules=all_linear_layers,
         )
 
         model = get_peft_model(model, lora_config)
+        manual_convert(model)
 
     print_trainable_parameters(model)
 
