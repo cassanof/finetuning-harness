@@ -320,6 +320,7 @@ def run_training(args, train_data, val_data):
             target_modules=modules,
         )
 
+        model.enable_input_require_grads()
         model = get_peft_model(model, lora_config)
 
     print_trainable_parameters(model)
