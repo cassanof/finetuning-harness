@@ -17,6 +17,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
+    BitsAndBytesConfig,
     AutoTokenizer,
     PreTrainedTokenizer,
     TrainerState,
@@ -69,6 +70,8 @@ def get_args():
     parser.add_argument("--lora_r", type=int, default=16)
     parser.add_argument("--lora_alpha", type=int, default=32)
     parser.add_argument("--lora_dropout", type=float, default=0.05)
+    parser.add_argument("--lora_bits", type=int, default=8)
+    parser.add_argument("--lora_extreme", action="store_true")
 
     parser.add_argument("--seq_length", type=int, default=1024)
     parser.add_argument("--max_steps", type=int, default=10000)
@@ -85,7 +88,6 @@ def get_args():
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--no_fp16", action="store_false")
     parser.add_argument("--bf16", action="store_true")
-    parser.add_argument("--load_in_8bit", action="store_true")
     parser.add_argument("--no_gradient_checkpointing", action="store_false")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_workers", type=int, default=None)
@@ -95,11 +97,8 @@ def get_args():
     parser.add_argument("--save_freq", default=1000, type=int)
 
     parser.add_argument("--checkpoint", type=str, default=None)
-    parser.add_argument("--hub_model_id", type=str, default=None)
-    parser.add_argument("--hub_strategy", type=str, default="checkpoint")
     parser.add_argument("--save_strategy", type=str, default="steps")
     parser.add_argument("--save_total_limit", type=int, default=10)
-    parser.add_argument("--push_to_hub", action="store_true", default=False)
     parser.add_argument("--local-rank", type=int, default=0)
     parser.add_argument("--no_custom_tokenizer", action="store_true")
     parser.add_argument("--humaneval_eval_loss", action="store_true")
@@ -173,6 +172,7 @@ class ConstantLengthDataset(IterableDataset):
             seq_length (int): Length of token sequences to return.
             num_of_sequences (int): Number of token sequences to keep in buffer.
             chars_per_token (int): Number of characters per token used to estimate number of tokens in text buffer.
+            reruns (int): Number of times to rerun the dataset.
     """
 
     def __init__(
@@ -303,21 +303,49 @@ def create_datasets(tokenizer, args):
 
 def run_training(args, train_data, val_data):
     print(f"Loading the model.")
+    model_extra_kwargs = {}
+    if args.lora:
+        config = {}
+        if args.lora_bits == 8:
+            config["load_in_8bit"] = True
+        elif args.lora_bits == 4:
+            config["load_in_4bit"] = True
+        else:
+            assert False, f"Invalid lora_bits: {args.lora_bits}"
+
+        if args.lora_extreme:  # extreme quantization
+            print("LOADING EXTREME QUANTIZATION!!!!!!!")
+            config["load_in_8bit"] = False  # disable if set by user
+            config["load_in_4bit"] = True
+            config["llm_int8_threshold"] = 6.0
+            config["llm_int8_has_fp16_weight"] = False
+            config["bnb_4bit_quant_type"] = "nf4"
+            config["bnb_4bit_use_double_quant"] = True
+            dtype = None
+            if args.bf16:
+                dtype = torch.bfloat16
+            else:
+                dtype = torch.float16
+            config["bnb_4bit_compute_dtype"] = dtype
+
+        model_extra_kwargs["device_map"] = {
+            "": args.local_rank if args.local_rank != -1 else 0
+        }
+        model_extra_kwargs["quantization_config"] = config
+
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
-        load_in_8bit=args.lora or args.load_in_8bit,
         use_cache=not args.no_gradient_checkpointing,
-        device_map={
-            "": Accelerator().process_index} if args.lora or args.load_in_8bit else None,
+        **model_extra_kwargs,
     )
 
     train_data.start_iteration = 0
 
     if args.lora:
-        print("!!! Using LoRA")
+        print("Preparing model for LORA training")
         prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
         all_linear_layers = find_all_linear_names(model)
@@ -336,7 +364,6 @@ def run_training(args, train_data, val_data):
         model.enable_input_require_grads()
         model = get_peft_model(model, lora_config)
         hacky_model_convert(args, model)
-        
 
     print_trainable_parameters(model)
 
@@ -357,21 +384,23 @@ def run_training(args, train_data, val_data):
         warmup_steps=args.num_warmup_steps,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         gradient_checkpointing=args.no_gradient_checkpointing,
-        hub_strategy=args.hub_strategy,
         save_total_limit=99999 if args.lora else args.save_total_limit,
-        hub_model_id=args.hub_model_id,
         save_strategy=args.save_strategy,
-        push_to_hub=args.push_to_hub,
         fp16=args.no_fp16,
         bf16=args.bf16,
         weight_decay=args.weight_decay,
-        run_name=f"{args.model_path.replace('/', '_')}",
         report_to=["wandb"],
         ddp_find_unused_parameters=False,
     )
 
     if (args.local_rank == 0 or args.local_rank == -1):
-        wandb.init(project="roblox")
+        import time
+        date = time.strftime("%Y-%m-%d-%H-%M")
+        lora_str = "_lora" if args.lora else ""
+        model_name = args.model_path.split("/")[-1]
+        dataset_name = args.dataset_path.split("/")[-1]
+        wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
+        wandb.init(project="roblox", name=wandb_name)
 
     callbacks = []
     if args.lora:
@@ -406,12 +435,13 @@ def main(args):
             revision=args.model_revision,
         )
     else:
+        print("Loading custom tokenizer ...")
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             "./tokenizer_files"
         )
         load_special_tokens(tokenizer)
-
-    print(tokenizer.special_tokens_map)
+        print("Special tokens:")
+        print(tokenizer.special_tokens_map)
 
     train_dataset, eval_dataset = create_datasets(tokenizer, args)
 
