@@ -9,10 +9,10 @@ python3 -m torch.distributed.launch \
         --data_column "content" \
         --split="train" \
         --output_dir="./model_starcoder_lora_lua50k" \
-        --seq_length 8192 \
+        --seq_length 2048 \
         --max_steps 500 \
         --batch_size 4 \
-        --gradient_accumulation_steps 1 \
+        --gradient_accumulation_steps 4 \
         --learning_rate 0.0002 \
         --num_warmup_steps 10 \
         --eval_freq 25 \
