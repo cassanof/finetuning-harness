@@ -74,6 +74,7 @@ def get_args():
     parser.add_argument("--lora_dropout", type=float, default=0.05)
     parser.add_argument("--lora_bits", type=int, default=8)
     parser.add_argument("--lora_extreme", action="store_true")
+    parser.add_argument("--adam_8bit", action="store_true")
 
     parser.add_argument("--seq_length", type=int, default=1024)
     parser.add_argument("--epochs", type=int, default=10)
@@ -116,6 +117,39 @@ def get_args():
 
 def is_main(args):
     return args.local_rank in [-1, 0]
+
+
+def get_adam_8bit(training_args, model):
+    import bitsandbytes as bnb
+    from torch import nn
+    from transformers.trainer_pt_utils import get_parameter_names
+
+    decay_parameters = get_parameter_names(model, [nn.LayerNorm])
+    decay_parameters = [
+        name for name in decay_parameters if "bias" not in name]
+    optimizer_grouped_parameters = [
+        {
+            "params": [p for n, p in model.named_parameters() if n in decay_parameters],
+            "weight_decay": training_args.weight_decay,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() if n not in decay_parameters],
+            "weight_decay": 0.0,
+        },
+    ]
+
+    optimizer_kwargs = {
+        "betas": (training_args.adam_beta1, training_args.adam_beta2),
+        "eps": training_args.adam_epsilon,
+    }
+    optimizer_kwargs["lr"] = training_args.learning_rate
+    adam_bnb_optim = bnb.optim.Adam8bit(
+        optimizer_grouped_parameters,
+        betas=(training_args.adam_beta1, training_args.adam_beta2),
+        eps=training_args.adam_epsilon,
+        lr=training_args.learning_rate,
+    )
+    return (adam_bnb_optim, None)
 
 
 def chars_token_ratio(dataset, tokenizer, data_column, nb_examples=400):
@@ -443,12 +477,15 @@ def run_training(args, max_steps, train_data, val_data):
         wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
         wandb.init(project="roblox", name=wandb_name)
 
-    callbacks = []
+    trainer_extra_kwargs = {}
     if args.lora:
-        callbacks = [SavePeftModelCallback]
+        trainer_extra_kwargs["callbacks"] = [SavePeftModelCallback]
+    if args.adam_8bit:
+        trainer_extra_kwargs["optimizers"] = get_adam_8bit(
+            training_args, model)
 
     trainer = Trainer(
-        model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, callbacks=callbacks
+        model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, **trainer_extra_kwargs
     )
 
     print("Training...")
