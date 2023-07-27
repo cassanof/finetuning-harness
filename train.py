@@ -86,7 +86,7 @@ def get_args():
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
 
-    parser.add_argument("--local_rank", type=int, default=0)
+    parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument("--no_fp16", action="store_false")
     parser.add_argument("--bf16", action="store_true")
     parser.add_argument("--no_gradient_checkpointing", action="store_false")
