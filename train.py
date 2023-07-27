@@ -60,11 +60,11 @@ def get_args():
     parser.add_argument("--dataset_revision", type=str, default="main")
     parser.add_argument("--subset", type=str, default="data")
     parser.add_argument("--split", type=str, default="train")
-    parser.add_argument("--size_valid_set", type=int, default=4000)
     parser.add_argument("--perc_valid_set", type=float, default=0.005)
-    parser.add_argument("--streaming", action="store_true")
     parser.add_argument("--shuffle_buffer", type=int, default=5000)
     parser.add_argument("--data_column", type=str, default="content")
+    parser.add_argument("--min_edu_score", type=float, default=0.0)
+    parser.add_argument("--edu_score_column", type=str)
 
     parser.add_argument("--lora", action="store_true")
     parser.add_argument("--lora_r", type=int, default=16)
@@ -252,30 +252,18 @@ def create_datasets(tokenizer, args):
             .filter(lambda example: example["language"] == args.lang) \
             .map(lambda example: {"content": example["prompt"] + example["solution"]})
 
-    if args.streaming:
-        print("Loading the dataset in streaming mode")
-        if args.humaneval_eval_loss:
-            raise ValueError(
-                "TODO Streaming mode is not supported for humaneval_eval_loss"
-            )
-        else:
-            valid_data = dataset.take(args.size_valid_set)  # type: ignore
-            train_data = dataset.skip(args.size_valid_set)  # type: ignore
-        train_data = train_data.shuffle(
-            buffer_size=args.shuffle_buffer, seed=args.seed)
+    if args.humaneval_eval_loss:
+        valid_data = eval_dataset
+        train_data = dataset if args.no_shuffle_train else dataset.shuffle(
+            seed=args.seed)
     else:
-        if args.humaneval_eval_loss:
-            valid_data = eval_dataset
-            train_data = dataset if args.no_shuffle_train else dataset.shuffle(
-                seed=args.seed)
-        else:
-            dataset = dataset.train_test_split(  # type: ignore
-                test_size=args.perc_valid_set, seed=args.seed)
-            train_data = dataset["train"]
-            valid_data = dataset["test"]
-        print(
-            f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}"
-        )
+        dataset = dataset.train_test_split(  # type: ignore
+            test_size=args.perc_valid_set, seed=args.seed)
+        train_data = dataset["train"]
+        valid_data = dataset["test"]
+    print(
+        f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}"
+    )
     chars_per_token = chars_token_ratio(
         train_data, tokenizer, args.data_column)
     print(
