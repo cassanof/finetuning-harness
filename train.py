@@ -53,10 +53,11 @@ class SavePeftModelCallback(TrainerCallback):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, default="bigcode/santacoder")
+    parser.add_argument("--model_path", type=str,
+                        default="bigcode/starcoderbase")
     parser.add_argument("--model_revision", type=str, default="main")
     parser.add_argument("--dataset_name", type=str,
-                        default="bigcode/santacoder")
+                        default="bigcode/starcoderdata")
     parser.add_argument("--dataset_revision", type=str, default="main")
     parser.add_argument("--subset", type=str, default="data")
     parser.add_argument("--split", type=str, default="train")
@@ -65,6 +66,7 @@ def get_args():
     parser.add_argument("--data_column", type=str, default="content")
     parser.add_argument("--min_edu_score", type=float, default=0.0)
     parser.add_argument("--edu_score_column", type=str)
+    parser.add_argument("--no_shuffle_train", action="store_true")
 
     parser.add_argument("--lora", action="store_true")
     parser.add_argument("--lora_r", type=int, default=16)
@@ -83,7 +85,6 @@ def get_args():
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
-    parser.add_argument("--lang", type=str, default="lua")
 
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument("--no_fp16", action="store_false")
@@ -101,9 +102,10 @@ def get_args():
     parser.add_argument("--save_total_limit", type=int, default=10)
     parser.add_argument("--local-rank", type=int, default=0)
     parser.add_argument("--no_custom_tokenizer", action="store_true")
+
     parser.add_argument("--humaneval_eval_loss", action="store_true")
     parser.add_argument("--eval_reruns", type=int, default=1)
-    parser.add_argument("--no_shuffle_train", action="store_true")
+    parser.add_argument("--lang", type=str, default="lua")
 
     return parser.parse_args()
 
@@ -261,6 +263,15 @@ def create_datasets(tokenizer, args):
             test_size=args.perc_valid_set, seed=args.seed)
         train_data = dataset["train"]
         valid_data = dataset["test"]
+    if args.edu_score_column:
+        train_data = train_data.filter(
+            lambda example: example[args.edu_score_column] >= args.min_edu_score
+        )
+        if not args.humaneval_eval_loss:
+            valid_data = valid_data.filter(
+                lambda example: example[args.edu_score_column] >= args.min_edu_score
+            )
+
     print(
         f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}"
     )
