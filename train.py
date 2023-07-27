@@ -472,8 +472,8 @@ def run_training(args, max_steps, train_data, val_data):
         import time
         date = time.strftime("%Y-%m-%d-%H-%M")
         lora_str = "_lora" if args.lora else ""
-        model_name = args.model_path.split("/")[-1]
-        dataset_name = args.dataset_name.split("/")[-1]
+        model_name = args.model_path.rstrip("/").split("/")[-1]
+        dataset_name = args.dataset_name.rstrip("/").split("/")[-1]
         wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
         wandb.init(project="roblox", name=wandb_name)
 
