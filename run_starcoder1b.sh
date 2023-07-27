@@ -10,10 +10,10 @@ python3 train.py \
         --batch_size 16 \
         --edu_score_column "edu_score" \
         --min_edu_score 0.5 \
-        --gradient_accumulation_steps 4 \
-        --save_total_limit 20 \
+        --gradient_accumulation_steps 1 \
+        --save_total_limit 10 \
         --learning_rate 5e-5 \
-        --epochs 20 \
+        --epochs 10 \
         --num_warmup_steps 15 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
