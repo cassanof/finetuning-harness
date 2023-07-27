@@ -4,11 +4,8 @@ python3 train.py \
         --no_custom_tokenizer \
         --model_revision="main" \
         --dataset_name="nuprl/stack_dedup_lua_codegen" \
-        --subset="data" \
         --lang="lua" \
-        --data_column "content" \
-        --split="train" \
-        --output_dir="./model_starcoder1b" \
+        --output_dir="./model_starcoder1b_edu5" \
         --seq_length 2048 \
         --batch_size 16 \
         --gradient_accumulation_steps 1 \
@@ -16,9 +13,6 @@ python3 train.py \
         --learning_rate 5e-5 \
         --epochs 20 \
         --num_warmup_steps 15 \
-        --eval_freq 1 \
-        --save_freq 1 \
-        --log_freq 1 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
