@@ -244,14 +244,14 @@ class ConstantLengthDataset(IterableDataset):
 
 
 def create_datasets(tokenizer, args):
+    num_gpus = 1 if args.local_rank == -1 else torch.distributed.get_world_size()
     dataset = load_dataset(
         args.dataset_name,
         revision=args.dataset_revision,
         data_dir=args.subset,
         split=args.split,
         use_auth_token=True,
-        num_proc=args.num_workers if not args.streaming else None,
-        streaming=args.streaming,
+        num_proc=args.num_workers // num_gpus,
     )
 
     eval_dataset = None
@@ -285,23 +285,29 @@ def create_datasets(tokenizer, args):
         train_data, tokenizer, args.data_column)
     print(
         f"The character to token ratio of the dataset is: {chars_per_token:.2f}")
+
     # scaling laws for the number of steps
     total_tokens = get_total_tokens(
         train_data, tokenizer, args.data_column, len(train_data))
-    num_gpus = 1 if args.local_rank == -1 else torch.distributed.get_world_size()
+    training_examples = total_tokens // args.seq_length
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
-    max_steps = int(total_tokens / effective_batch_size * args.epoch)
+    max_steps = int(training_examples / effective_batch_size * args.epoch)
+
     if is_main(args):
         print(f" #### SCALING LAWS ####")
+        print(f" ###### Examples ######")
         print(f"Total tokens: {total_tokens}")
+        print(f"Seq length: {args.seq_length}")
+        print(f"Training examples: {training_examples}")
+        print(f" ####### Batch #######")
         print(f"Batch size: {args.batch_size}")
         print(
             f"Gradient accumulation steps: {args.gradient_accumulation_steps}")
         print(f"Number of GPUs: {num_gpus}")
         print(f"Effective batch size: {effective_batch_size}")
         print(f"Epoch: {args.epoch}")
-        print(f"##########################")
+        print(f"####### RESULT ###########")
         print(f"# Max steps: {max_steps} #")
         print(f"##########################")
 

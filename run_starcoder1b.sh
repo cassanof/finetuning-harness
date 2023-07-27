@@ -1,26 +1,25 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
-python3 -m torch.distributed.launch \
-        --nproc_per_node 8 train.py \
-        --model_path="/home/arjun/models/starcoderbase-1b/" \
+python3 train.py \
+        --model_path="/home/federico/starcoderbase-1b/" \
         --no_custom_tokenizer \
         --model_revision="main" \
-        --dataset_name="nuprl/stack-dedup-python-testgen-starcoder-format" \
+        --dataset_name="nuprl/stack_dedup_lua_codegen" \
         --subset="data" \
-        --lang="py" \
+        --lang="lua" \
         --data_column "content" \
         --split="train" \
         --output_dir="./model_starcoder1b" \
         --seq_length 2048 \
         --batch_size 16 \
         --gradient_accumulation_steps 1 \
+        --save_total_limit 20 \
         --learning_rate 5e-5 \
-        --max_steps 70 \
-        --num_warmup_steps 5 \
-        --eval_freq 5 \
-        --save_freq 5 \
+        --epochs 20 \
+        --num_warmup_steps 15 \
+        --eval_freq 1 \
+        --save_freq 1 \
         --log_freq 1 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
-        --humaneval_eval_loss \
-        --eval_reruns 30 
+        --perc_valid_set 0.05
