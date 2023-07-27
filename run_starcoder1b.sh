@@ -8,6 +8,8 @@ python3 train.py \
         --output_dir="./model_starcoder1b_edu5" \
         --seq_length 2048 \
         --batch_size 16 \
+        --edu_score_column "edu_score" \
+        --min_edu_score 0.5 \
         --gradient_accumulation_steps 4 \
         --save_total_limit 20 \
         --learning_rate 5e-5 \
