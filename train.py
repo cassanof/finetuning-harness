@@ -13,6 +13,7 @@ import torch
 import random
 from datasets.load import load_dataset
 from torch.utils.data import IterableDataset
+from number_of_tokens import get_total_tokens
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
 from transformers import (
@@ -29,7 +30,6 @@ from transformers import (
     set_seed,
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-from accelerate import Accelerator
 
 
 class SavePeftModelCallback(TrainerCallback):
@@ -76,7 +76,7 @@ def get_args():
     parser.add_argument("--lora_extreme", action="store_true")
 
     parser.add_argument("--seq_length", type=int, default=1024)
-    parser.add_argument("--max_steps", type=int, default=10000)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--eos_token_id", type=int, default=49152)
@@ -94,8 +94,10 @@ def get_args():
     parser.add_argument("--num_workers", type=int, default=None)
     parser.add_argument("--output_dir", type=str, default="./checkpoints")
     parser.add_argument("--log_freq", default=1, type=int)
-    parser.add_argument("--eval_freq", default=1000, type=int)
-    parser.add_argument("--save_freq", default=1000, type=int)
+    parser.add_argument("--eval_freq", default=1.0, type=float,
+                        help="Evaluate X times per epoch, can be < 1")
+    parser.add_argument("--save_freq", default=1.0, type=float,
+                        help="Save X times per epoch, can be < 1")
 
     parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument("--save_strategy", type=str, default="steps")
@@ -108,6 +110,10 @@ def get_args():
     parser.add_argument("--lang", type=str, default="lua")
 
     return parser.parse_args()
+
+
+def is_main(args):
+    return args.local_rank in [-1, 0]
 
 
 def chars_token_ratio(dataset, tokenizer, data_column, nb_examples=400):
@@ -279,6 +285,26 @@ def create_datasets(tokenizer, args):
         train_data, tokenizer, args.data_column)
     print(
         f"The character to token ratio of the dataset is: {chars_per_token:.2f}")
+    # scaling laws for the number of steps
+    total_tokens = get_total_tokens(
+        train_data, tokenizer, args.data_column, len(train_data))
+    num_gpus = 1 if args.local_rank == -1 else torch.distributed.get_world_size()
+    effective_batch_size = args.batch_size * \
+        args.gradient_accumulation_steps * num_gpus
+    max_steps = int(total_tokens / effective_batch_size * args.epoch)
+    if is_main(args):
+        print(f" #### SCALING LAWS ####")
+        print(f"Total tokens: {total_tokens}")
+        print(f"Batch size: {args.batch_size}")
+        print(
+            f"Gradient accumulation steps: {args.gradient_accumulation_steps}")
+        print(f"Number of GPUs: {num_gpus}")
+        print(f"Effective batch size: {effective_batch_size}")
+        print(f"Epoch: {args.epoch}")
+        print(f"##########################")
+        print(f"# Max steps: {max_steps} #")
+        print(f"##########################")
+
     train_dataset = ConstantLengthDataset(
         tokenizer,
         train_data,
@@ -297,10 +323,10 @@ def create_datasets(tokenizer, args):
         reruns=args.eval_reruns,
     )
 
-    return train_dataset, valid_dataset
+    return max_steps, train_dataset, valid_dataset
 
 
-def run_training(args, train_data, val_data):
+def run_training(args, max_steps, train_data, val_data):
     print(f"Loading the model.")
     model_extra_kwargs = {}
     if args.lora:
@@ -344,7 +370,7 @@ def run_training(args, train_data, val_data):
     train_data.start_iteration = 0
 
     if args.lora:
-        print("Preparing model for LORA training")
+        print("Preparing model for LoRA training")
         prepare_model_for_kbit_training(
             model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
         all_linear_layers = find_all_linear_names(model)
@@ -368,13 +394,19 @@ def run_training(args, train_data, val_data):
 
     print("Starting main loop")
 
+    # calculate eval and save steps from max steps
+    steps_per_epoch = max_steps // args.epoch
+    eval_steps = int(steps_per_epoch * args.eval_freq)
+    save_steps = int(steps_per_epoch * args.save_freq)
+    print(f"Eval steps: {eval_steps} -- Save steps: {save_steps}")
+
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         dataloader_drop_last=True,
         evaluation_strategy="steps",
-        max_steps=args.max_steps,
-        eval_steps=args.eval_freq,
-        save_steps=args.save_freq,
+        max_steps=max_steps,
+        eval_steps=eval_steps,
+        save_steps=save_steps,
         logging_steps=args.log_freq,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
@@ -392,7 +424,7 @@ def run_training(args, train_data, val_data):
         ddp_find_unused_parameters=False,
     )
 
-    if (args.local_rank == 0 or args.local_rank == -1):
+    if is_main(args):
         import time
         date = time.strftime("%Y-%m-%d-%H-%M")
         lora_str = "_lora" if args.lora else ""
@@ -442,9 +474,9 @@ def main(args):
         print("Special tokens:")
         print(tokenizer.special_tokens_map)
 
-    train_dataset, eval_dataset = create_datasets(tokenizer, args)
+    max_steps, train_dataset, eval_dataset = create_datasets(tokenizer, args)
 
-    run_training(args, train_dataset, eval_dataset)
+    run_training(args, max_steps, train_dataset, eval_dataset)
 
 
 if __name__ == "__main__":
