@@ -8,7 +8,7 @@ python3 train.py \
         --output_dir="./model_starcoder1b_edu5" \
         --seq_length 2048 \
         --batch_size 16 \
-        --gradient_accumulation_steps 1 \
+        --gradient_accumulation_steps 4 \
         --save_total_limit 20 \
         --learning_rate 5e-5 \
         --epochs 20 \
