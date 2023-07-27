@@ -80,6 +80,8 @@ def get_args():
     parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
     parser.add_argument("--eos_token_id", type=int, default=49152)
+    parser.add_argument("--total_tokens", type=int,
+                        help="Total number of tokens in the dataset. If not provided, will be computed.")
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -287,12 +289,14 @@ def create_datasets(tokenizer, args):
         f"The character to token ratio of the dataset is: {chars_per_token:.2f}")
 
     # scaling laws for the number of steps
-    total_tokens = get_total_tokens(
-        train_data, tokenizer, args.data_column, len(train_data))
+    total_tokens = args.total_tokens
+    if total_tokens is None:
+        total_tokens = get_total_tokens(
+            train_data, tokenizer, args.data_column, len(train_data))
     training_examples = total_tokens // args.seq_length
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
-    max_steps = int(training_examples / effective_batch_size * args.epoch)
+    max_steps = int(training_examples / effective_batch_size * args.epochs)
 
     if is_main(args):
         print(f" #### SCALING LAWS ####")
@@ -306,7 +310,7 @@ def create_datasets(tokenizer, args):
             f"Gradient accumulation steps: {args.gradient_accumulation_steps}")
         print(f"Number of GPUs: {num_gpus}")
         print(f"Effective batch size: {effective_batch_size}")
-        print(f"Epoch: {args.epoch}")
+        print(f"Epoch: {args.epochs}")
         print(f"####### RESULT ###########")
         print(f"# Max steps: {max_steps} #")
         print(f"##########################")
@@ -401,7 +405,7 @@ def run_training(args, max_steps, train_data, val_data):
     print("Starting main loop")
 
     # calculate eval and save steps from max steps
-    steps_per_epoch = max_steps // args.epoch
+    steps_per_epoch = max_steps // args.epochs
     eval_steps = int(steps_per_epoch * args.eval_freq)
     save_steps = int(steps_per_epoch * args.save_freq)
     print(f"Eval steps: {eval_steps} -- Save steps: {save_steps}")
