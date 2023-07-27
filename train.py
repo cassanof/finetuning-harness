@@ -431,6 +431,7 @@ def run_training(args, max_steps, train_data, val_data):
         bf16=args.bf16,
         weight_decay=args.weight_decay,
         report_to=["wandb"],
+        load_best_model_at_end=True,
         ddp_find_unused_parameters=False,
     )
 
@@ -457,8 +458,8 @@ def run_training(args, max_steps, train_data, val_data):
     else:
         trainer.train()
 
-    print("Saving last checkpoint of the model")
-    model.save_pretrained(os.path.join(args.output_dir, "final_checkpoint/"))
+    print("Saving best model...")
+    model.save_pretrained(os.path.join(args.output_dir, "best/"))
 
 
 def load_special_tokens(tokenizer):
