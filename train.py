@@ -246,7 +246,8 @@ class ConstantLengthDataset(IterableDataset):
 
 
 def create_datasets(tokenizer, args):
-    num_gpus = 1 if args.local_rank == -1 else torch.distributed.get_world_size()
+    # NOTE: using torch.cuda.device_count() isn't bulletproof, but it's good enough for our purposes
+    num_gpus = 1 if args.local_rank == -1 else torch.cuda.device_count()
     dataset = load_dataset(
         args.dataset_name,
         revision=args.dataset_revision,
