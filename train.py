@@ -110,6 +110,7 @@ def get_args():
     parser.add_argument("--humaneval_eval_loss", action="store_true")
     parser.add_argument("--eval_reruns", type=int, default=1)
     parser.add_argument("--lang", type=str, default="lua")
+    parser.add_argument("--deepspeed", type=str)
 
     return parser.parse_args()
 
@@ -367,7 +368,8 @@ def run_training(args, max_steps, train_data, val_data):
         model_extra_kwargs["device_map"] = {
             "": args.local_rank if args.local_rank != -1 else 0
         }
-        model_extra_kwargs["quantization_config"] = BitsAndBytesConfig(**config)
+        model_extra_kwargs["quantization_config"] = BitsAndBytesConfig(
+            **config)
 
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
@@ -411,6 +413,10 @@ def run_training(args, max_steps, train_data, val_data):
     save_steps = int(steps_per_epoch * args.save_freq)
     print(f"Eval steps: {eval_steps} -- Save steps: {save_steps}")
 
+    extra_training_args = {}
+    if args.deepspeed:
+        extra_training_args["deepspeed"] = args.deepspeed
+
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         dataloader_drop_last=True,
@@ -434,6 +440,7 @@ def run_training(args, max_steps, train_data, val_data):
         report_to=["wandb"],
         load_best_model_at_end=True,
         ddp_find_unused_parameters=False,
+        **extra_training_args,
     )
 
     if is_main(args):
