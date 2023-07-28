@@ -1,7 +1,3 @@
-"""
-Fine-Tune SantaCoder on code/text dataset
-"""
-
 import argparse
 import os
 
