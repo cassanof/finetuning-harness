@@ -1,23 +1,17 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
-python3 -m torch.distributed.launch \
+torchrun \
         --nproc_per_node 8 train.py \
+        --deepspeed="./deepspeed_z3_config_bf16.json" \
         --model_path="bigcode/starcoderbase" \
         --no_custom_tokenizer \
-        --model_revision="main" \
         --dataset_name="nuprl/stack_dedup_lua_codegen" \
-        --subset="data" \
-        --data_column "content" \
-        --split="train" \
         --output_dir="./model_starcoder_lua50k" \
         --seq_length 2048 \
-        --max_steps 1000 \
+        --epochs 10 \
         --batch_size 1 \
         --gradient_accumulation_steps 8 \
         --learning_rate 2e-5 \
-        --num_warmup_steps 15 \
-        --eval_freq 50 \
-        --save_freq 50 \
-        --log_freq 1 \
+        --num_warmup_steps 10 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
         --bf16 \
