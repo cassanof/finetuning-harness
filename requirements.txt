@@ -6,3 +6,4 @@ huggingface-hub
 peft
 accelerate
 bitsandbytes
+deepspeed
