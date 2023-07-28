@@ -1,6 +1,6 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
 torchrun \
-        --nproc_per_node 8 
+        --nproc_per_node 8 \
         --deepspeed="./deepspeed_z3_config_bf16.json" \
 train.py \
         --model_path="bigcode/starcoderbase" \
