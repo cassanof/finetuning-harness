@@ -1,8 +1,13 @@
-#CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
-torchrun \
+# need to give deepspeed config file as argument
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied. Please give deepspeed config file as argument"
+    exit 1
+fi
+python3 -m torch.distributed.launch \
         --nproc_per_node 4 \
         train.py \
-        --deepspeed="./deepspeed_z3_config_bf16.json" \
+        --deepspeed="$1" \
         --model_path="bigcode/starcoderbase" \
         --no_custom_tokenizer \
         --dataset_name="nuprl/stack_dedup_lua_codegen" \
