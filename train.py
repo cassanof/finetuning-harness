@@ -289,8 +289,16 @@ def create_datasets(tokenizer, args):
     # scaling laws for the number of steps
     total_tokens = args.total_tokens
     if total_tokens is None:
-        total_tokens = get_total_tokens(
-            train_data, tokenizer, args.data_column, len(train_data))
+        # approximate if dataset is too large (greater than 50k examples)
+        if len(train_data) > 50000:
+            print(
+                f"Dataset is too large ({len(train_data)} examples). Approximating the number of tokens.")
+            total_tokens_50k = get_total_tokens(
+                train_data, tokenizer, args.data_column, 50000)
+            total_tokens = total_tokens_50k * (len(train_data) // 50000)
+        else:
+            total_tokens = get_total_tokens(
+                train_data, tokenizer, args.data_column, len(train_data))
     training_examples = total_tokens // args.seq_length
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
