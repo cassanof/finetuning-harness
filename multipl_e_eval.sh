@@ -1,19 +1,23 @@
 #!/bin/bash
 if [ $# -lt 4 ]; then
-  echo "Usage: multipl_e_eval.sh <lang> <MultiPL-E dir> <checkpoint dir> <num_gpus> [local dataset]"
+  echo "Usage: multipl_e_eval.sh <lang> <MultiPL-E dir> <checkpoint dir> <dataset> <num_gpus>"
     exit 1
 fi
 
 LANG=$1
 ROOT=$(realpath $2)
 CHECKPOINT_DIR=$(realpath $3)
-NUM_GPUS=$4
-LOCAL_DATASET=${5:-"0"}
-echo $LOCAL_DATASET
-if [ $LOCAL_DATASET -ne "0" ]; then
-  LOCAL_DATASET=$(realpath $LOCAL_DATASET)
-  echo "Using local dataset: $LOCAL_DATASET"
+DATASET=$4
+NUM_GPUS=$5
+
+IS_LOCAL=1
+# if the DATASET is "humaneval" or "mbpp", set IS_LOCAL to 0
+if [ $DATASET ~= "humaneval" ] || [ $DATASET ~= "mbpp" ]; then
+  IS_LOCAL=0
+else
+  DATASET=$(realpath $DATASET)
 fi
+echo "Using dataset: $DATASET - is local: $IS_LOCAL"
 
 # put in a list all the directories that contain the checkpoints
 CHECKPOINT_DIRS=()
@@ -44,8 +48,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
       OUT_DIR="${ADDR[$i]}/eval"
       echo "Starting process $i with checkpoint ${ADDR[$i]} - output dir: $OUT_DIR"
       mkdir -p $OUT_DIR
-      # check if local dataset is used (not equal to 0)
-      if [ $LOCAL_DATASET -ne 0 ]; then
+      if [ $DATASET -ne 0 ]; then
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
             --root-dataset humaneval \
