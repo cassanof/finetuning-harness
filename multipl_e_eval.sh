@@ -40,8 +40,8 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
 
   for (( i=0; i<${#ADDR[@]}; i++ )); 
   do 
-      echo "Starting process $i with checkpoint ${ADDR[$i]}"
       OUT_DIR="${ADDR[$i]}/eval"
+      echo "Starting process $i with checkpoint ${ADDR[$i]} - output dir: $OUT_DIR"
       mkdir -p $OUT_DIR
       # check if local dataset is used (not equal to 0)
       if [ $LOCAL_DATASET -ne 0 ]; then
@@ -52,7 +52,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --completion-limit 20 \
             --batch-size 20 \
             --temperature 0.2 \
-            --output-dir $OUT &
+            --output-dir $OUT_DIR &
       else
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
@@ -62,7 +62,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --completion-limit 20 \
             --batch-size 20 \
             --temperature 0.2 \
-            --output-dir $OUT &
+            --output-dir $OUT_DIR &
       fi
       PIDS+=($!)
   done
