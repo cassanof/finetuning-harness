@@ -45,7 +45,8 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
 
   for (( i=0; i<${#ADDR[@]}; i++ )); 
   do 
-      OUT_DIR="${ADDR[$i]}/eval"
+      BASEDIR=$(basename ${ADDR[$i]})
+      OUT_DIR="${ADDR[$i]}/eval_$BASEDIR"
       echo "Starting process $i with checkpoint ${ADDR[$i]} - output dir: $OUT_DIR"
       mkdir -p $OUT_DIR
       if [ $IS_LOCAL -eq 0 ]; then
@@ -89,7 +90,8 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
   # run docker eval
   for (( i=0; i<${#ADDR[@]}; i++ ));
   do
-    EVAL_DIR="${ADDR[$i]}/eval"
+    BASEDIR=$(basename ${ADDR[$i]})
+    EVAL_DIR="${ADDR[$i]}/eval_$BASEDIR"
     echo "Running docker eval in background for $EVAL_DIR"
     docker run --rm -d --network none --volume $EVAL_DIR:/inputs:ro --volume $EVAL_DIR:/outputs:rw multipl-e-evaluation --dir /inputs --output-dir /outputs
   done
