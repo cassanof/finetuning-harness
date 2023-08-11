@@ -52,7 +52,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --completion-limit 20 \
             --batch-size 20 \
             --temperature 0.2 \
-            --output-dir $OUT 
+            --output-dir $OUT &
       else
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
@@ -62,7 +62,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --completion-limit 20 \
             --batch-size 20 \
             --temperature 0.2 \
-            --output-dir $OUT 
+            --output-dir $OUT &
       fi
       PIDS+=($!)
   done
@@ -81,5 +81,21 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
   trap ctrl_c INT
 
   wait # wait for all background processes to finish
+
+  # run docker eval
+  for (( i=0; i<${#ADDR[@]}; i++ ));
+  do
+    EVAL_DIR="${ADDR[$i]}/eval"
+    echo "Running docker eval in background for $EVAL_DIR"
+    docker run \ 
+      --rm \
+      -d \
+      --network none \
+      --volume $EVAL_DIR:/inputs:ro \
+      --volume $EVAL_DIR:/outputs:rw \
+      multipl-e-evaluation \
+      --dir /inputs \
+      --output-dir /outputs
+  done
 done
 popd
