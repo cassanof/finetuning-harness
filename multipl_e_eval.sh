@@ -12,7 +12,7 @@ NUM_GPUS=$5
 
 IS_LOCAL=1
 # if the DATASET is "humaneval" or "mbpp", set IS_LOCAL to 0
-if [ $DATASET ~= "humaneval" ] || [ $DATASET ~= "mbpp" ]; then
+if [ $DATASET == "humaneval" ] || [ $DATASET == "mbpp" ]; then
   IS_LOCAL=0
 else
   DATASET=$(realpath $DATASET)
@@ -48,7 +48,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
       OUT_DIR="${ADDR[$i]}/eval"
       echo "Starting process $i with checkpoint ${ADDR[$i]} - output dir: $OUT_DIR"
       mkdir -p $OUT_DIR
-      if [ $DATASET -ne 0 ]; then
+      if [ $IS_LOCAL -eq 0 ]; then
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
             --root-dataset humaneval \
