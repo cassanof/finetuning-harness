@@ -51,7 +51,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
       if [ $IS_LOCAL -eq 0 ]; then
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
-            --root-dataset humaneval \
+            --root-dataset $DATASET \
             --lang $LANG \
             --completion-limit 20 \
             --batch-size 20 \
@@ -61,7 +61,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
         CUDA_VISIBLE_DEVICES=$i python3 automodel.py \
             --name ${ADDR[$i]} \
             --use-local \
-            --dataset $LOCAL_DATASET \
+            --dataset $DATASET \
             --lang $LANG \
             --completion-limit 20 \
             --batch-size 20 \
@@ -91,15 +91,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
   do
     EVAL_DIR="${ADDR[$i]}/eval"
     echo "Running docker eval in background for $EVAL_DIR"
-    docker run \ 
-      --rm \
-      -d \
-      --network none \
-      --volume $EVAL_DIR:/inputs:ro \
-      --volume $EVAL_DIR:/outputs:rw \
-      multipl-e-evaluation \
-      --dir /inputs \
-      --output-dir /outputs
+    docker run --rm -d --network none --volume $EVAL_DIR:/inputs:ro --volume $EVAL_DIR:/outputs:rw multipl-e-evaluation --dir /inputs --output-dir /outputs
   done
 done
 popd
