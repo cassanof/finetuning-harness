@@ -9,6 +9,7 @@ ROOT=$(realpath $2)
 CHECKPOINT_DIR=$(realpath $3)
 NUM_GPUS=$4
 LOCAL_DATASET=${5:-0}
+echo $LOCAL_DATASET
 if [ $LOCAL_DATASET -ne 0 ]; then
   LOCAL_DATASET=$(realpath $LOCAL_DATASET)
   echo "Using local dataset: $LOCAL_DATASET"
