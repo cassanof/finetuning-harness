@@ -35,7 +35,7 @@ done
 pushd $ROOT
 for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
   IFS='|' read -ra ADDR <<< "${CHECKPOINT_GROUPS[$gi]}"
-  echo "Group $gi"
+  echo "Firing off gpu-group $gi"
   PIDS=()
 
   for (( i=0; i<${#ADDR[@]}; i++ )); 
