@@ -10,8 +10,8 @@ CHECKPOINT_DIR=$(realpath $3)
 NUM_GPUS=$4
 LOCAL_DATASET=${5:-0}
 if [ $LOCAL_DATASET -ne 0 ]; then
-  echo "Using local dataset"
   LOCAL_DATASET=$(realpath $LOCAL_DATASET)
+  echo "Using local dataset: $LOCAL_DATASET"
 fi
 
 # put in a list all the directories that contain the checkpoints
