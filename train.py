@@ -78,7 +78,7 @@ def get_args():
     parser.add_argument("--eos_token_id", type=int, default=49152)
     parser.add_argument("--total_tokens", type=int,
                         help="Total number of tokens in the dataset. If not provided, will be computed.")
-    parser.add_argument("--no_approx_tokens", type=bool, default=False)
+    parser.add_argument("--no_approx_tokens", action="store_true")
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
