@@ -78,6 +78,7 @@ def get_args():
     parser.add_argument("--eos_token_id", type=int, default=49152)
     parser.add_argument("--total_tokens", type=int,
                         help="Total number of tokens in the dataset. If not provided, will be computed.")
+    parser.add_argument("--no_approx_tokens", type=bool, default=False)
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -290,7 +291,7 @@ def create_datasets(tokenizer, args):
     total_tokens = args.total_tokens
     if total_tokens is None:
         # approximate if dataset is too large (greater than 50k examples)
-        if len(train_data) > 50000:
+        if len(train_data) > 50000 and not args.no_approx_tokens:
             print(
                 f"Dataset is too large ({len(train_data)} examples). Approximating the number of tokens.")
             total_tokens_50k = get_total_tokens(
