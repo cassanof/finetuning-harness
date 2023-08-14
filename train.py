@@ -106,6 +106,7 @@ def get_args():
 
     parser.add_argument("--humaneval_eval_loss", action="store_true")
     parser.add_argument("--eval_reruns", type=int, default=1)
+    parser.add_argument("--save_best_model", action="store_true")
     parser.add_argument("--lang", type=str, default="lua")
     parser.add_argument("--deepspeed", type=str)
 
@@ -443,7 +444,7 @@ def run_training(args, max_steps, train_data, val_data):
         bf16=args.bf16,
         weight_decay=args.weight_decay,
         report_to=["wandb"],
-        load_best_model_at_end=True,
+        load_best_model_at_end=args.save_best_model,
         ddp_find_unused_parameters=False,
         **extra_training_args,
     )
@@ -471,8 +472,9 @@ def run_training(args, max_steps, train_data, val_data):
     else:
         trainer.train()
 
-    print("Saving best model...")
-    model.save_pretrained(os.path.join(args.output_dir, "best/"))
+    if args.save_best_model:
+        print("Saving best model...")
+        model.save_pretrained(os.path.join(args.output_dir, "best/"))
 
 
 def load_special_tokens(tokenizer):
