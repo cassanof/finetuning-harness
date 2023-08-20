@@ -7,7 +7,7 @@ import wandb
 import torch
 import random
 import time
-from datasets.load import load_dataset
+from datasets.load import load_dataset, load_from_disk
 from torch.utils.data import IterableDataset
 from number_of_tokens import get_total_tokens
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -247,14 +247,18 @@ class ConstantLengthDataset(IterableDataset):
 def create_datasets(tokenizer, args):
     # NOTE: using torch.cuda.device_count() isn't bulletproof, but it's good enough for our purposes
     num_gpus = 1 if args.local_rank == -1 else torch.cuda.device_count()
-    dataset = load_dataset(
-        args.dataset_name,
-        revision=args.dataset_revision,
-        data_dir=args.subset,
-        split=args.split,
-        use_auth_token=True,
-        num_proc=args.num_workers // num_gpus,
-    )
+    # if dataset is a path, load it from the path
+    if os.path.isdir(args.dataset_name):
+        dataset = load_from_disk(args.dataset_name)
+    else:
+        dataset = load_dataset(
+            args.dataset_name,
+            revision=args.dataset_revision,
+            data_dir=args.subset,
+            split=args.split,
+            use_auth_token=True,
+            num_proc=args.num_workers // num_gpus,
+        )
 
     eval_dataset = None
     if args.humaneval_eval_loss:
