@@ -10,6 +10,12 @@ CHECKPOINT_DIR=$(realpath $3)
 DATASET=$4
 NUM_GPUS=$5
 
+if [[ -z "${BATCH_SIZE}" ]]; then
+  V_BATCH_SIZE=20
+else
+  V_BATCH_SIZE="$BATCH_SIZE"
+fi
+
 IS_LOCAL=1
 # if the DATASET is "humaneval" or "mbpp", set IS_LOCAL to 0
 if [ $DATASET == "humaneval" ] || [ $DATASET == "mbpp" ]; then
@@ -55,7 +61,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --root-dataset $DATASET \
             --lang $LANG \
             --completion-limit 20 \
-            --batch-size 20 \
+            --batch-size $V_BATCH_SIZE \
             --temperature 0.2 \
             --output-dir $OUT_DIR &
       else
@@ -65,7 +71,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --dataset $DATASET \
             --lang $LANG \
             --completion-limit 20 \
-            --batch-size 20 \
+            --batch-size $V_BATCH_SIZE \
             --temperature 0.2 \
             --output-dir $OUT_DIR &
       fi
