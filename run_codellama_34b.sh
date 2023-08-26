@@ -11,6 +11,7 @@ python3 -m torch.distributed.launch \
         --model_path="codellama/CodeLlama-34b-hf" \
         --no_custom_tokenizer \
         --dataset_name="nuprl/stack_dedup_lua_codegen_full" \
+        --no_approx_tokens \
         --output_dir="./model_codellama_34b_multiplt" \
         --seq_length 2048 \
         --epochs 10 \
