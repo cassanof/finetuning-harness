@@ -9,14 +9,12 @@ python3 -m torch.distributed.launch \
         --data_column "content" \
         --split="train" \
         --output_dir="./model_starcoder_lora_lua50k" \
+        --epochs 10 \
         --seq_length 2048 \
-        --max_steps 500 \
         --batch_size 4 \
         --gradient_accumulation_steps 4 \
         --learning_rate 0.0002 \
         --num_warmup_steps 10 \
-        --eval_freq 25 \
-        --save_freq 25 \
         --log_freq 1 \
         --num_workers=$(expr $(nproc --all) - 4) \
         --no_fp16 \
