@@ -58,7 +58,6 @@ def get_args():
     parser.add_argument("--subset", type=str, default="data")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--perc_valid_set", type=float, default=0.005)
-    parser.add_argument("--shuffle_buffer", type=int, default=5000)
     parser.add_argument("--data_column", type=str, default="content")
     parser.add_argument("--min_edu_score", type=float, default=0.0)
     parser.add_argument("--edu_score_column", type=str)
@@ -197,7 +196,7 @@ class ConstantLengthDataset(IterableDataset):
     ):
         self.tokenizer = tokenizer
         self.concat_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else args.eos_token_id
-        print(f"Concat token id: {self.concat_token_id}")
+        print(f"Concat token id (EOS token): {self.concat_token_id}")
         self.dataset = dataset
         self.seq_length = seq_length
         self.infinite = infinite
