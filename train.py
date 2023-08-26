@@ -197,6 +197,7 @@ class ConstantLengthDataset(IterableDataset):
     ):
         self.tokenizer = tokenizer
         self.concat_token_id = tokenizer.eos_token_id if tokenizer.eos_token_id is not None else args.eos_token_id
+        print(f"Concat token id: {self.concat_token_id}")
         self.dataset = dataset
         self.seq_length = seq_length
         self.infinite = infinite

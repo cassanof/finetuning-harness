@@ -1,6 +1,6 @@
-# Scripts to finetune GPTBigCode architecture models
+# Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks
 
-This repo provides the whole pizza for fine-tuning GPTBigCode models (e.g. StarCoder) on code generation tasks.
+This repo provides the whole pizza for fine-tuning HuggingFace models (e.g. StarCoder, or Code LLama) on code generation tasks.
 It includes:
 
 1. Constant Length Dataset Loader
