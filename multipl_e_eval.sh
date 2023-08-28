@@ -16,6 +16,12 @@ else
   V_BATCH_SIZE="$BATCH_SIZE"
 fi
 
+if [[ -z "${COMP_LIMIT}" ]]; then
+  V_COMP_LIMIT=20
+else
+  V_COMP_LIMIT="$COMP_LIMIT"
+fi
+
 IS_LOCAL=1
 # if the DATASET is "humaneval" or "mbpp", set IS_LOCAL to 0
 if [ $DATASET == "humaneval" ] || [ $DATASET == "mbpp" ]; then
@@ -60,7 +66,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --name ${ADDR[$i]} \
             --root-dataset $DATASET \
             --lang $LANG \
-            --completion-limit 20 \
+            --completion-limit $V_COMP_LIMIT \
             --batch-size $V_BATCH_SIZE \
             --temperature 0.2 \
             --output-dir $OUT_DIR &
@@ -70,7 +76,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --use-local \
             --dataset $DATASET \
             --lang $LANG \
-            --completion-limit 20 \
+            --completion-limit $V_COMP_LIMIT \
             --batch-size $V_BATCH_SIZE \
             --temperature 0.2 \
             --output-dir $OUT_DIR &
