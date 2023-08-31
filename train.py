@@ -55,7 +55,7 @@ def get_args():
     parser.add_argument("--dataset_name", type=str,
                         default="bigcode/starcoderdata")
     parser.add_argument("--dataset_revision", type=str, default="main")
-    parser.add_argument("--subset", type=str, default="data")
+    parser.add_argument("--subset", type=str, default=None)
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--perc_valid_set", type=float, default=0.005)
     parser.add_argument("--data_column", type=str, default="content")
@@ -251,13 +251,16 @@ def create_datasets(tokenizer, args):
     if os.path.isdir(args.dataset_name):
         dataset = load_from_disk(args.dataset_name)
     else:
+        kwargs = {}
+        if args.subset:
+            kwargs["data_dir"] = args.subset
         dataset = load_dataset(
             args.dataset_name,
             revision=args.dataset_revision,
-            data_dir=args.subset,
             split=args.split,
             use_auth_token=True,
             num_proc=args.num_workers // num_gpus,
+            **kwargs,
         )
 
     eval_dataset = None
