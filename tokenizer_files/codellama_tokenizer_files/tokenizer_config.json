@@ -22,7 +22,7 @@
   "model_max_length": 1000000000000000019884624838656,
   "pad_token": null,
   "sp_model_kwargs": {},
-  "tokenizer_class": "LlamaTokenizer",
+  "tokenizer_class": "CodeLlamaTokenizer",
   "unk_token": {
     "__type": "AddedToken",
     "content": "<unk>",
