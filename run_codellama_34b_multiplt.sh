@@ -1,9 +1,19 @@
-# need to give deepspeed config file as argument
-if [ $# -eq 0 ]
+#!/bin/bash
+# need to give deepspeed config file as argument and language as second argument
+
+
+# throw error if deepspeed and language not given as argument
+if [ -z "$1" ]
   then
-    echo "No arguments supplied. Please give deepspeed config file as argument"
+    echo "No deepspeed config file supplied"
     exit 1
 fi
+if [ -z "$2" ]
+  then
+    echo "No language supplied"
+    exit 1
+fi
+T_LANG=$2
 python3 -m torch.distributed.launch \
         --nproc_per_node 8 \
         train.py \
@@ -11,9 +21,9 @@ python3 -m torch.distributed.launch \
         --model_path="codellama/CodeLlama-34b-hf" \
         --no_custom_tokenizer \
         --dataset_name="nuprl/MultiPL-T" \
-        --split="racket" \
+        --split="$T_LANG" \
         --no_approx_tokens \
-        --output_dir="./model_codellama_34b_multiplt_racket" \
+        --output_dir="./model_codellama_34b_multiplt_$T_LANG" \
         --seq_length 2048 \
         --epochs 5 \
         --batch_size 1 \
