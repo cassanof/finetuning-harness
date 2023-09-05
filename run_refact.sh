@@ -8,12 +8,12 @@ if [ -z "$1" ]
     echo "No deepspeed config file supplied"
     exit 1
 fi
-if [ -z "$1" ]
+if [ -z "$2" ]
   then
     echo "No language supplied"
     exit 1
 fi
-T_LANG=$1
+T_LANG=$2
 # check if env is set, otherwise default to 24000
 MASTER_PORT=${MASTER_PORT:-24000}
 python3 -m torch.distributed.launch \
