@@ -2,22 +2,15 @@
 # need to give deepspeed config file as argument and language as second argument
 
 
-# throw error if deepspeed and language not given as argument
 if [ -z "$1" ]
-  then
-    echo "No deepspeed config file supplied"
-    exit 1
-fi
-if [ -z "$2" ]
   then
     echo "No language supplied"
     exit 1
 fi
-T_LANG=$2
+T_LANG=$1
 python3 -m torch.distributed.launch \
         --nproc_per_node 8 \
         train.py \
-        --deepspeed="$1" \
         --model_path="smallcloudai/Refact-1_6B-fim" \
         --no_custom_tokenizer \
         --dataset_name="nuprl/MultiPL-T" \
