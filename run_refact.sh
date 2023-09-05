@@ -24,7 +24,7 @@ python3 -m torch.distributed.launch \
         --split="$T_LANG" \
         --no_approx_tokens \
         --output_dir="./model_refact_multiplt_$T_LANG" \
-        --seq_length 2048 \
+        --seq_length 4096 \
         --epochs 5 \
         --batch_size 1 \
         --gradient_accumulation_steps 4 \
