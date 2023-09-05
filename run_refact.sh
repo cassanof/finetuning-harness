@@ -8,7 +8,10 @@ if [ -z "$1" ]
     exit 1
 fi
 T_LANG=$1
+# check if env is set, otherwise default to 24000
+MASTER_PORT=${MASTER_PORT:-24000}
 python3 -m torch.distributed.launch \
+        --master_port $MASTER_PORT \
         --nproc_per_node 8 \
         train.py \
         --model_path="smallcloudai/Refact-1_6B-fim" \
