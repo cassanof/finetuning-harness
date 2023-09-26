@@ -82,7 +82,7 @@ def get_args():
     parser.add_argument("--save_strategy", type=str, default="steps")
     parser.add_argument("--save_total_limit", type=int, default=10)
     parser.add_argument("--local-rank", type=int, default=0)
-    parser.add_argument("--no_custom_tokenizer", action="store_true")
+    parser.add_argument("--custom_tokenizer", type=str, default=None)
 
     parser.add_argument("--humaneval_eval_loss", action="store_true")
     parser.add_argument("--eval_reruns", type=int, default=1)
@@ -447,19 +447,19 @@ def load_special_tokens(tokenizer):
 
 
 def main(args):
-    if args.no_custom_tokenizer:
-        tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-            args.model_path,
-            revision=args.model_revision,
-        )
-    else:
+    if args.custom_tokenizer:
         print("Loading custom tokenizer ...")
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
-            "./tokenizer_files"
+            args.custom_tokenizer,
         )
         load_special_tokens(tokenizer)
         print("Special tokens:")
         print(tokenizer.special_tokens_map)
+    else:
+        tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
+            args.model_path,
+            revision=args.model_revision,
+        )
 
     max_steps, train_dataset, eval_dataset = create_datasets(tokenizer, args)
 
