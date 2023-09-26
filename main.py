@@ -6,7 +6,6 @@ import argparse
 import os
 
 import json
-import peft
 import wandb
 import torch
 import random
@@ -14,6 +13,7 @@ import time
 from datasets.load import load_dataset, load_from_disk
 from torch.utils.data import IterableDataset
 from number_of_tokens import get_total_tokens
+from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
 from transformers import (
@@ -21,34 +21,11 @@ from transformers import (
     BitsAndBytesConfig,
     AutoTokenizer,
     PreTrainedTokenizer,
-    TrainerState,
-    TrainerControl,
-    TrainerCallback,
     Trainer,
     TrainingArguments,
     logging,
     set_seed,
 )
-from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
-
-
-class SavePeftModelCallback(TrainerCallback):
-    def on_save(
-        self,
-        args: TrainingArguments,
-        state: TrainerState,
-        control: TrainerControl,
-        **kwargs,
-    ):
-        checkpoint_folder = os.path.join(
-            args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
-
-        kwargs["model"].save_pretrained(checkpoint_folder)
-
-        pytorch_model_path = os.path.join(
-            checkpoint_folder, "pytorch_model.bin")
-        torch.save({}, pytorch_model_path)
-        return control
 
 
 def get_args():
@@ -145,33 +122,6 @@ def print_trainable_parameters(model):
     print(
         f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
     )
-
-
-def hacky_model_convert(args, model):
-    for name, module in model.named_modules():
-        if isinstance(module, peft.tuners.lora.LoraLayer):
-            if args.bf16:
-                module = module.to(torch.bfloat16)
-        if 'norm' in name:
-            module = module.to(torch.float32)
-        if 'lm_head' in name or 'embed_tokens' in name:
-            if hasattr(module, 'weight'):
-                if args.bf16 and module.weight.dtype == torch.float32:
-                    module = module.to(torch.bfloat16)
-
-
-def find_all_linear_names(model):
-    import bitsandbytes as bnb
-    cls = bnb.nn.Linear8bitLt
-    lora_module_names = set()
-    for name, module in model.named_modules():
-        if isinstance(module, cls):
-            names = name.split('.')
-            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
-
-    if 'lm_head' in lora_module_names:  # needed for 16-bit
-        lora_module_names.remove('lm_head')
-    return lora_module_names
 
 
 class ConstantLengthDataset(IterableDataset):
@@ -287,6 +237,7 @@ def create_datasets(tokenizer, args):
             lambda example: example[args.edu_score_column] >= args.min_edu_score
         )
         if not args.humaneval_eval_loss:
+            assert valid_data is not None
             valid_data = valid_data.filter(
                 lambda example: example[args.edu_score_column] >= args.min_edu_score
             )
