@@ -19,7 +19,6 @@ python3 -m torch.distributed.launch \
         main.py \
         --deepspeed="$1" \
         --model_path="codellama/CodeLlama-13b-hf" \
-        --no_custom_tokenizer \
         --dataset_name="nuprl/MultiPL-T" \
         --split="$T_LANG" \
         --no_approx_tokens \

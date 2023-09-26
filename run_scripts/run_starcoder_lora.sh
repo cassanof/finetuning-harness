@@ -2,7 +2,6 @@
 python3 -m torch.distributed.launch \
         --nproc_per_node 8 main.py \
         --model_path="bigcode/starcoderbase" \
-        --no_custom_tokenizer \
         --model_revision="main" \
         --dataset_name="nuprl/stack_dedup_lua_codegen" \
         --subset="data" \

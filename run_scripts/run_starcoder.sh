@@ -9,7 +9,6 @@ python3 -m torch.distributed.launch \
         main.py \
         --deepspeed="$1" \
         --model_path="bigcode/starcoderbase" \
-        --no_custom_tokenizer \
         --dataset_name="nuprl/multiplt-ocaml-dedup-30k" \
         --output_dir="./model_starcoder_ocaml_paper" \
         --seq_length 2048 \

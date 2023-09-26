@@ -22,7 +22,6 @@ python3 -m torch.distributed.launch \
         main.py \
         --deepspeed="$1" \
         --model_path="smallcloudai/Refact-1_6B-fim" \
-        --no_custom_tokenizer \
         --dataset_name="nuprl/MultiPL-T" \
         --split="$T_LANG" \
         --no_approx_tokens \

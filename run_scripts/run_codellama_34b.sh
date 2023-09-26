@@ -9,7 +9,6 @@ python3 -m torch.distributed.launch \
         main.py \
         --deepspeed="$1" \
         --model_path="codellama/CodeLlama-34b-hf" \
-        --no_custom_tokenizer \
         --dataset_name="nuprl/stack_dedup_lua_codegen_full" \
         --total_tokens 20732989 \
         --output_dir="./model_codellama_34b_multiplt" \

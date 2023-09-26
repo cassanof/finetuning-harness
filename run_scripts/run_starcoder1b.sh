@@ -1,7 +1,6 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
 python3 main.py \
         --model_path="/home/federico/starcoderbase-1b/" \
-        --no_custom_tokenizer \
         --model_revision="main" \
         --dataset_name="nuprl/stack_dedup_lua_codegen" \
         --lang="lua" \
