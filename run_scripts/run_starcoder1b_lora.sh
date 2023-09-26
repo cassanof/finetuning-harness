@@ -1,6 +1,6 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
 python3 -m torch.distributed.launch \
-        --nproc_per_node 8 train.py \
+        --nproc_per_node 8 main.py \
         --model_path="/home/arjun/models/starcoderbase-1b/" \
         --no_custom_tokenizer \
         --model_revision="main" \

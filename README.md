@@ -14,12 +14,12 @@ It includes:
 
 ## Generic Usage
 
-This repo is driven by the `train.py` script. It supports supports a wide range of arguments, which can be listed using `python train.py --help`.
-It may be simpler to look at the `run_*.sh` scripts, which are used to run training on the different models with different settings.
+This repo is driven by the `main.py` script. It supports supports a wide range of arguments, which can be listed using `python main.py --help`.
+It may be simpler to look at the scripts in the `run_scripts` directory, which are used to run training on the different models with different settings.
 
 ### LoRA
 
-There is built-in support for LoRA, which can be enabled by passing the `--lora` flag. See `./run_starcoder_lora.sh` for an example.
+There is built-in support for LoRA, which can be enabled by passing the `--lora` flag. See `run_scripts/run_starcoder_lora.sh` for an example.
 There is additional support for some "lora hacks", like double quant, which can be enabled by passing the `--lora_extreme` flag.
 
 ### DeepSpeed

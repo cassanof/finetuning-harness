@@ -1,6 +1,6 @@
 #CUDA_VISIBLE_DEVICES=... python3 -m torch.distributed.launch \
 python3 -m torch.distributed.launch \
-        --nproc_per_node 6 train.py \
+        --nproc_per_node 6 main.py \
         --model_path="bigcode/gpt_bigcode-santacoder" \
         --model_revision="main" \
         --dataset_name="bigcode/starcoderdata" \

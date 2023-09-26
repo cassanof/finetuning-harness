@@ -6,7 +6,7 @@ if [ $# -eq 0 ]
 fi
 python3 -m torch.distributed.launch \
         --nproc_per_node 8 \
-        train.py \
+        main.py \
         --deepspeed="$1" \
         --model_path="bigcode/starcoderbase" \
         --no_custom_tokenizer \

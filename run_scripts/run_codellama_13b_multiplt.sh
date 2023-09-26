@@ -16,7 +16,7 @@ fi
 T_LANG=$2
 python3 -m torch.distributed.launch \
         --nproc_per_node 8 \
-        train.py \
+        main.py \
         --deepspeed="$1" \
         --model_path="codellama/CodeLlama-13b-hf" \
         --no_custom_tokenizer \
