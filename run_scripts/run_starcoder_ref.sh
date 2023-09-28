@@ -4,8 +4,11 @@ if [ $# -eq 0 ]
     echo "No arguments supplied. Please give deepspeed config file as argument"
     exit 1
 fi
+# check if env is set, otherwise default to 24000
+MASTER_PORT=${MASTER_PORT:-24000}
 python3 -m torch.distributed.launch \
         --nproc_per_node 4 \
+        --master_port $MASTER_PORT \
         main.py \
         --deepspeed="$1" \
         --model_path="bigcode/starcoderbase" \
