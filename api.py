@@ -62,8 +62,8 @@ class TrainingAPI:
         return subprocess.run(
             bash_cmd,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE if not verbose else None,
+            stderr=subprocess.STDOUT if not verbose else None,
             cwd=PROJ_DIR,
             encoding='utf-8'
         )
