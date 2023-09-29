@@ -49,8 +49,7 @@ class TrainingAPI:
         Runs the training script with the given arguments.
 
         Args:
-            verbose (bool, optional): Whether to print stdout and stderr. The output will 
-            still be captured and can be accessed through the return value. Defaults to True.
+            verbose (bool, optional): Whether to print stdout and stderr. Defaults to True.
 
         Returns:
             subprocess.CompletedProcess: The result of the training script.
