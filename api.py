@@ -47,15 +47,11 @@ class TrainingAPI:
     def run(self):
         """
         Runs the training script with the given arguments.
+
+        Returns:
+            subprocess.CompletedProcess: The result of the training script.
         """
-        bash_cmd = self.to_bash()
-        print(bash_cmd)
-        p = subprocess.run(bash_cmd, shell=True)
-        if p.returncode != 0:
-            raise RuntimeError(
-                f'Training failed with return code {p.returncode}.\n'
-                + f'Command: {bash_cmd}'
-            )
+        return subprocess.run(self.to_bash(), shell=True)
 
 
 if __name__ == "__main__":
