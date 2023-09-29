@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 import subprocess
 import os
 
@@ -44,25 +44,37 @@ class TrainingAPI:
                         v in self.trainer_config.items()])
         return bash_cmd
 
-    def run(self, verbose: bool = True) -> subprocess.CompletedProcess:
+    def run(self, printing: Literal["devnull", "pipe", "print"] = "print") -> subprocess.CompletedProcess:
         """
         Runs the training script with the given arguments.
 
         Args:
-            verbose (bool, optional): Whether to print stdout and stderr. Defaults to True.
+            printing (Literal["devnull", "pipe", "print"], optional): The printing behavior of the
+            training script. If "devnull", then the output is redirected to /dev/null. If "pipe",
+            then the output is piped to the parent process. If "print", then the output is printed
+            to stdout. Defaults to "print".
 
         Returns:
             subprocess.CompletedProcess: The result of the training script.
         """
         bash_cmd = self.to_bash()
-        if verbose:
+
+        if printing == "print":
             print(bash_cmd)
+            stdout = None
+            stderr = None
+        elif printing == "devnull":
+            stdout = subprocess.DEVNULL
+            stderr = subprocess.DEVNULL
+        elif printing == "pipe":
+            stdout = subprocess.PIPE
+            stderr = subprocess.STDOUT
 
         return subprocess.run(
             bash_cmd,
             shell=True,
-            stdout=subprocess.PIPE if not verbose else None,
-            stderr=subprocess.STDOUT if not verbose else None,
+            stdout=stdout,
+            stderr=stderr,
             cwd=PROJ_DIR,
             encoding='utf-8'
         )
@@ -90,4 +102,4 @@ if __name__ == "__main__":
             'save_total_limit': 20,
         }
     )
-    res = config.run(verbose=True)
+    res = config.run(printing="print")
