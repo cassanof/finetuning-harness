@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union, Tuple
 import subprocess
 import os
 
@@ -26,6 +26,7 @@ class TrainingAPI:
             None, then all available GPUs are used. Defaults to None.
             master_port (int, optional): The port to use for the master process. Defaults to 29500.
         """
+        assert trainer_config['output_dir'] is not None
         if gpu_ids is None:
             import torch
             # figures out how many GPUs are available
@@ -44,18 +45,19 @@ class TrainingAPI:
                         v in self.trainer_config.items()])
         return bash_cmd
 
-    def run(self, printing: Literal["devnull", "pipe", "print"] = "print") -> subprocess.CompletedProcess:
+    def run(self, printing: Literal["devnull", "pipe", "print"] = "print") -> Tuple[subprocess.CompletedProcess, List[str]]:
         """
         Runs the training script with the given arguments.
 
         Args:
-            printing (Literal["devnull", "pipe", "print"], optional): The printing behavior of the
-            training script. If "devnull", then the output is redirected to /dev/null. If "pipe",
-            then the output is piped to the parent process. If "print", then the output is printed
-            to stdout. Defaults to "print".
+        printing (Literal["devnull", "pipe", "print"], optional): The printing behavior of the
+        training script. If "devnull", then the output is redirected to /dev/null. If "pipe",
+        then the output is piped to the parent process. If "print", then the output is printed
+        to stdout. Defaults to "print".
 
         Returns:
-            subprocess.CompletedProcess: The result of the training script.
+        Tuple[subprocess.CompletedProcess, List[str]]: A tuple of the subprocess.CompletedProcess
+        object and a list of paths to checkpoints that were saved during training.
         """
         bash_cmd = self.to_bash()
 
@@ -70,7 +72,7 @@ class TrainingAPI:
             stdout = subprocess.PIPE
             stderr = subprocess.STDOUT
 
-        return subprocess.run(
+        p = subprocess.run(
             bash_cmd,
             shell=True,
             stdout=stdout,
@@ -78,6 +80,19 @@ class TrainingAPI:
             cwd=PROJ_DIR,
             encoding='utf-8'
         )
+
+        if p.returncode != 0:
+            return p, []
+
+        # check output_dir for checkpoint directories
+        checkpoints = []
+        output_dir = self.trainer_config['output_dir']
+        assert isinstance(output_dir, str)
+        for filename in os.listdir(output_dir):
+            if filename.startswith('checkpoint'):
+                checkpoints.append(os.path.join(output_dir, filename))
+
+        return p, checkpoints
 
 
 if __name__ == "__main__":
@@ -102,5 +117,6 @@ if __name__ == "__main__":
             'save_total_limit': 20,
         }
     )
-    res = config.run(printing="print")
+    res, dirs = config.run(printing="print")
     print(res.returncode)
+    print(dirs)
