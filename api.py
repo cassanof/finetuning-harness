@@ -70,6 +70,7 @@ class TrainingAPI:
 
 
 if __name__ == "__main__":
+    # example usage
     config = TrainingAPI(
         gpu_ids=[4, 5, 6],
         trainer_config={
@@ -90,4 +91,4 @@ if __name__ == "__main__":
             'save_total_limit': 20,
         }
     )
-    res = config.run()
+    res = config.run(verbose=True)
