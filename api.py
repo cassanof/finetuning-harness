@@ -44,19 +44,34 @@ class TrainingAPI:
                         v in self.trainer_config.items()])
         return bash_cmd
 
-    def run(self) -> subprocess.CompletedProcess:
+    def run(self, verbose: bool = True) -> subprocess.CompletedProcess:
         """
         Runs the training script with the given arguments.
+
+        Args:
+            verbose (bool, optional): Whether to print stdout and stderr. The output will 
+            still be captured and can be accessed through the return value. Defaults to True.
 
         Returns:
             subprocess.CompletedProcess: The result of the training script.
         """
-        return subprocess.run(self.to_bash(), shell=True)
+        bash_cmd = self.to_bash()
+        if verbose:
+            print(bash_cmd)
+
+        return subprocess.run(
+            bash_cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=PROJ_DIR,
+            encoding='utf-8'
+        )
 
 
 if __name__ == "__main__":
     config = TrainingAPI(
-        gpu_ids=[0, 1, 2, 3],
+        gpu_ids=[4, 5, 6],
         trainer_config={
             'model_path': 'bigcode/starcoderbase-1b',
             'dataset_name': 'nuprl/MultiPL-T',
