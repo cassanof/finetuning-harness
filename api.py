@@ -44,14 +44,18 @@ class TrainingAPI:
                         v in self.trainer_config.items()])
         return bash_cmd
 
-    def run(self) -> subprocess.CompletedProcess:
+    def run(self):
         """
         Runs the training script with the given arguments.
-
-        Returns:
-            subprocess.CompletedProcess: The result of the training script.
         """
-        return subprocess.run(self.to_bash(), shell=True)
+        bash_cmd = self.to_bash()
+        print(bash_cmd)
+        p = subprocess.run(bash_cmd, shell=True)
+        if p.returncode != 0:
+            raise RuntimeError(
+                f'Training failed with return code {p.returncode}.\n'
+                + f'Command: {bash_cmd}'
+            )
 
 
 if __name__ == "__main__":
@@ -76,3 +80,4 @@ if __name__ == "__main__":
         }
     )
     print(config.to_bash())
+    config.run()
