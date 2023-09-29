@@ -77,7 +77,6 @@ class TrainingAPI:
             shell=True,
             stdout=stdout,
             stderr=stderr,
-            cwd=PROJ_DIR,
             encoding='utf-8'
         )
 
