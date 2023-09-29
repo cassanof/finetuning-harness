@@ -90,5 +90,4 @@ if __name__ == "__main__":
             'save_total_limit': 20,
         }
     )
-    print(config.to_bash())
     res = config.run()
