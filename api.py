@@ -103,3 +103,4 @@ if __name__ == "__main__":
         }
     )
     res = config.run(printing="print")
+    print(res.returncode)
