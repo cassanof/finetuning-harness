@@ -44,7 +44,7 @@ class TrainingAPI:
                         v in self.trainer_config.items()])
         return bash_cmd
 
-    def run(self):
+    def run(self) -> subprocess.CompletedProcess:
         """
         Runs the training script with the given arguments.
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             'output_dir': '/tmp/testing',
             'seq_length': 1024,
             'epochs': 2,
-            'batch_size': 32,
+            'batch_size': 16,
             'gradient_accumulation_steps': 8,
             'learning_rate': 2e-5,
             'num_warmup_steps': 10,
@@ -76,4 +76,4 @@ if __name__ == "__main__":
         }
     )
     print(config.to_bash())
-    config.run()
+    res = config.run()
