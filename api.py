@@ -90,7 +90,7 @@ if __name__ == "__main__":
             'split': 'lua',
             'output_dir': '/tmp/testing',
             'seq_length': 1024,
-            'epochs': 2,
+            'epochs': 1,
             'batch_size': 16,
             'gradient_accumulation_steps': 8,
             'learning_rate': 2e-5,
