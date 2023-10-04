@@ -15,7 +15,7 @@ python3 -m torch.distributed.launch \
         --dataset_name="nuprl-staging/py_reflection_bootstrap_2500_train" \
         --output_dir="./model_starcoder_bootstrap_ref" \
         --seq_length 4096 \
-        --epochs 10 \
+        --epochs 1 \
         --batch_size 1 \
         --gradient_accumulation_steps 1 \
         --learning_rate 2e-5 \
