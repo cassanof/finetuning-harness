@@ -298,6 +298,7 @@ def run_training(args, max_steps, train_data, val_data):
     # calculate eval and save steps from max steps
     steps_per_epoch = max_steps // args.epochs
     eval_steps = int(steps_per_epoch * args.eval_freq)
+    eval_steps = None if eval_steps == 0 else eval_steps # disable if 0
     save_steps = int(steps_per_epoch * args.save_freq)
     print(f"Eval steps: {eval_steps} -- Save steps: {save_steps}")
 
