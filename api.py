@@ -70,7 +70,7 @@ class TrainingAPI:
             stderr = subprocess.DEVNULL
         elif printing == "pipe":
             stdout = subprocess.PIPE
-            stderr = subprocess.STDOUT
+            stderr = subprocess.PIPE
 
         p = subprocess.run(
             bash_cmd,
