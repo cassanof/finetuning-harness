@@ -146,6 +146,9 @@ def create_datasets(tokenizer, args):
         valid_data = eval_dataset
         train_data = dataset if args.no_shuffle_train else dataset.shuffle(
             seed=args.seed)
+    elif args.perc_valid_set == 0:
+        train_data = dataset
+        valid_data = None
     else:
         dataset = dataset.train_test_split(  # type: ignore
             test_size=args.perc_valid_set, seed=args.seed)
@@ -162,7 +165,7 @@ def create_datasets(tokenizer, args):
             )
 
     print(
-        f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}"
+        f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data) if valid_data else None}"
     )
     chars_per_token = chars_token_ratio(
         train_data, tokenizer, args.data_column)
@@ -298,7 +301,7 @@ def run_training(args, max_steps, train_data, val_data):
     # calculate eval and save steps from max steps
     steps_per_epoch = max_steps // args.epochs
     eval_steps = int(steps_per_epoch * args.eval_freq)
-    eval_steps = None if eval_steps == 0 else eval_steps # disable if 0
+    eval_steps = None if eval_steps == 0 else eval_steps  # disable if 0
     save_steps = int(steps_per_epoch * args.save_freq)
     print(f"Eval steps: {eval_steps} -- Save steps: {save_steps}")
 
