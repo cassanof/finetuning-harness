@@ -188,7 +188,8 @@ def create_datasets(tokenizer, args):
     training_examples = total_tokens // args.seq_length
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
-    max_steps = max(1, int(training_examples / effective_batch_size * args.epochs))
+    max_steps = max(1, int(training_examples /
+                    effective_batch_size * args.epochs))
 
     if is_main(args):
         print(f" #### SCALING LAWS ####")
@@ -223,7 +224,7 @@ def create_datasets(tokenizer, args):
         chars_per_token=chars_per_token,
         content_field=args.data_column,
         reruns=args.eval_reruns,
-    )
+    ) if valid_data else None
 
     return max_steps, train_dataset, valid_dataset
 
