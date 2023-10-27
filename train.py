@@ -11,7 +11,7 @@ import torch
 import time
 from datasets.load import load_dataset, load_from_disk
 from number_of_tokens import get_total_tokens, get_total_tokens_from_iterable
-from dataset_loader import ConstantLengthDataset, PaddedDataset
+from dataset_loader import ConstantLengthDataset, PaddedDataset, TQDMWraper
 from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
@@ -120,7 +120,7 @@ def print_trainable_parameters(model):
     )
 
 
-def create_datasets(tokenizer, args):
+def create_datasets(tokenizer, args, tqdm=True):
     # NOTE: using torch.cuda.device_count() isn't bulletproof, but it's good enough for our purposes
     num_gpus = 1 if args.local_rank == -1 else torch.cuda.device_count()
     # if dataset is a path, load it from the path
@@ -207,7 +207,8 @@ def create_datasets(tokenizer, args):
                 train_data, tokenizer, args.data_column, 50000)
             total_tokens = total_tokens_50k * (len(train_data) // 50000)
         else:
-            total_tokens = get_total_tokens_from_iterable(ds_constructor(train_data, infinite=False))
+            total_tokens = get_total_tokens_from_iterable(
+                ds_constructor(train_data, infinite=False))
 
     training_examples = total_tokens // args.seq_length
 
@@ -236,6 +237,13 @@ def create_datasets(tokenizer, args):
     train_dataset = ds_constructor(train_data, infinite=True)
     valid_dataset = ds_constructor(
         valid_data, infinite=False) if valid_data else None
+
+    if tqdm:
+        train_dataset = TQDMWraper(
+            train_dataset, num_iters=training_examples, desc="Training")
+        if valid_dataset:
+            valid_dataset = TQDMWraper(
+                valid_dataset, desc="Evaluating")
 
     return max_steps, train_dataset, valid_dataset
 

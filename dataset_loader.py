@@ -1,4 +1,5 @@
 from torch.utils.data import IterableDataset
+from tqdm import tqdm
 import random
 import torch
 
@@ -168,6 +169,17 @@ class PaddedDataset(IterableDataset):
                 "input_ids": torch.LongTensor(token_ids),
                 "labels": torch.LongTensor(token_ids),
             }
+
+
+class TQDMWraper(IterableDataset):
+    def __init__(self, dataset, num_iters=None, desc=""):
+        self.dataset = dataset
+        self.num_iters = num_iters
+        self.desc = desc
+
+    def __iter__(self):
+        for example in tqdm(self.dataset, total=self.num_iters, desc=self.desc):
+            yield example
 
 
 if __name__ == "__main__":
