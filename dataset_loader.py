@@ -1,6 +1,5 @@
 from torch.utils.data import IterableDataset
 import random
-from tqdm import tqdm
 import torch
 
 
@@ -97,7 +96,6 @@ class PaddedDataset(IterableDataset):
         trim_longer=False,
         content_field="content",
         pad_token_id=None,
-        use_tqdm=True,
     ):
         self.tokenizer = tokenizer
         if pad_token_id is not None:
@@ -116,15 +114,9 @@ class PaddedDataset(IterableDataset):
         self.current_size = 0
         self.content_field = content_field
         self.trim_longer = trim_longer
-        self.use_tqdm = use_tqdm
 
     def __iter__(self):
-        def init_iter():
-            iterator = iter(self.dataset)
-            if self.use_tqdm:
-                iterator = tqdm(iterator, desc="PaddedDataset")
-            return iterator
-        iterator = init_iter()
+        iterator = iter(self.dataset)
         more_examples = True
 
         while more_examples:
@@ -150,6 +142,6 @@ class PaddedDataset(IterableDataset):
                 }
             except StopIteration:
                 if self.infinite:
-                    iterator = init_iter()
+                    iterator = iter(self.dataset)
                 else:
                     more_examples = False
