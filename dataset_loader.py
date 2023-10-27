@@ -180,11 +180,11 @@ if __name__ == "__main__":
     dataset = PaddedDataset(tokenizer, ds, seq_length=2048)
     num_exs = 0
     for i, example in enumerate(dataset):
-        #  print("#" * 80)
-        print(f"Example {i}")
         decoded = tokenizer.decode(example["input_ids"])
+        if i < 4:
+            print("#" * 80)
+            print(decoded)
         num_exs += decoded.count("### Instruction:")
-        #  print(decoded)
 
     print(f"Total number of examples: {num_exs}")
     print(f"Total number of examples in the dataset: {len(ds)}")
