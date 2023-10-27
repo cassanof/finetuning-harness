@@ -20,6 +20,7 @@ def main(args):
         print("Loading custom tokenizer ...")
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             args.custom_tokenizer,
+            padding_side="left",
         )
         load_special_tokens(tokenizer)
         print("Special tokens:")
@@ -28,6 +29,7 @@ def main(args):
         tokenizer: PreTrainedTokenizer = AutoTokenizer.from_pretrained(
             args.model_path,
             revision=args.model_revision,
+            padding_side="left",
         )
 
     max_steps, train_dataset, eval_dataset = create_datasets(tokenizer, args)

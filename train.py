@@ -11,7 +11,7 @@ import torch
 import time
 from datasets.load import load_dataset, load_from_disk
 from number_of_tokens import get_total_tokens
-from dataset_loader import ConstantLengthDataset
+from dataset_loader import ConstantLengthDataset, PaddedDataset
 from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from tqdm import tqdm
@@ -53,6 +53,10 @@ def get_arg_parser():
     parser.add_argument("--total_tokens", type=int,
                         help="Total number of tokens in the dataset. If not provided, will be computed.")
     parser.add_argument("--no_approx_tokens", action="store_true")
+    parser.add_argument("--dataset_loader", type=str,
+                        default="constant", choices=["constant", "padded"])
+    parser.add_argument("--pad_token_id", type=int, default=None)
+    parser.add_argument("--trim_longer", action="store_true")
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -79,7 +83,6 @@ def get_arg_parser():
     parser.add_argument("--custom_tokenizer", type=str, default=None)
 
     parser.add_argument("--humaneval_eval_loss", action="store_true")
-    parser.add_argument("--eval_reruns", type=int, default=1)
     parser.add_argument("--save_best_model", action="store_true")
     parser.add_argument("--lang", type=str, default="lua")
     parser.add_argument("--deepspeed", type=str)
@@ -131,7 +134,6 @@ def create_datasets(tokenizer, args):
             args.dataset_name,
             revision=args.dataset_revision,
             split=args.split,
-            use_auth_token=True,
             num_proc=args.num_workers // num_gpus,
             **kwargs,
         )
@@ -173,19 +175,45 @@ def create_datasets(tokenizer, args):
         f"The character to token ratio of the dataset is: {chars_per_token:.2f}")
 
     # scaling laws for the number of steps
-    total_tokens = args.total_tokens
-    if total_tokens is None:
-        # approximate if dataset is too large (greater than 50k examples)
-        if len(train_data) > 50000 and not args.no_approx_tokens:
-            print(
-                f"Dataset is too large ({len(train_data)} examples). Approximating the number of tokens.")
-            total_tokens_50k = get_total_tokens(
-                train_data, tokenizer, args.data_column, 50000)
-            total_tokens = total_tokens_50k * (len(train_data) // 50000)
-        else:
-            total_tokens = get_total_tokens(
-                train_data, tokenizer, args.data_column, len(train_data))
-    training_examples = total_tokens // args.seq_length
+    if args.dataset_loader == "constant":
+        total_tokens = args.total_tokens
+        if total_tokens is None:
+            # approximate if dataset is too large (greater than 50k examples)
+            if len(train_data) > 50000 and not args.no_approx_tokens:
+                print(
+                    f"Dataset is too large ({len(train_data)} examples). Approximating the number of tokens.")
+                total_tokens_50k = get_total_tokens(
+                    train_data, tokenizer, args.data_column, 50000)
+                total_tokens = total_tokens_50k * (len(train_data) // 50000)
+            else:
+                total_tokens = get_total_tokens(
+                    train_data, tokenizer, args.data_column, len(train_data))
+        training_examples = total_tokens // args.seq_length
+
+        def ds_constructor(data, infinite): return ConstantLengthDataset(
+            tokenizer,
+            data,
+            infinite=infinite,
+            seq_length=args.seq_length,
+            chars_per_token=chars_per_token,
+            content_field=args.data_column,
+        )
+    elif args.dataset_loader == "padded":
+        total_tokens = len(train_data) * args.seq_length
+        training_examples = len(train_data)
+
+        def ds_constructor(data, infinite): return PaddedDataset(
+            tokenizer,
+            data,
+            infinite=infinite,
+            seq_length=args.seq_length,
+            content_field=args.data_column,
+            pad_token_id=args.pad_token_id,
+            trim_longer=args.trim_longer,
+        )
+    else:
+        raise ValueError(
+            f"Invalid dataset loader: {args.dataset_loader}. Must be 'constant' or 'padded'.")
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
     max_steps = max(1, int(training_examples /
@@ -208,23 +236,9 @@ def create_datasets(tokenizer, args):
         print(f"# Max steps: {max_steps} #")
         print(f"##########################")
 
-    train_dataset = ConstantLengthDataset(
-        tokenizer,
-        train_data,
-        infinite=True,
-        seq_length=args.seq_length,
-        chars_per_token=chars_per_token,
-        content_field=args.data_column,
-    )
-    valid_dataset = ConstantLengthDataset(
-        tokenizer,
-        valid_data,
-        infinite=False,
-        seq_length=args.seq_length,
-        chars_per_token=chars_per_token,
-        content_field=args.data_column,
-        reruns=args.eval_reruns,
-    ) if valid_data else None
+    train_dataset = ds_constructor(train_data, infinite=True)
+    valid_dataset = ds_constructor(
+        valid_data, infinite=False) if valid_data else None
 
     return max_steps, train_dataset, valid_dataset
 

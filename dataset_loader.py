@@ -21,7 +21,7 @@ class ConstantLengthDataset(IterableDataset):
         tokenizer,
         dataset,
         infinite=False,
-        seq_length=1024,
+        seq_length=2048,
         num_of_sequences=1024,
         chars_per_token=3.6,
         content_field="content",
@@ -76,3 +76,72 @@ class ConstantLengthDataset(IterableDataset):
                     "input_ids": torch.LongTensor(input_ids),
                     "labels": torch.LongTensor(input_ids),
                 }
+
+
+class PaddedDataset(IterableDataset):
+    """
+    Unlike ConstantLengthDataset this dataset returns padded sequences of tokens, which
+    have a fixed length of seq_length. The dataset will panic if a sequence is longer
+    than seq_length, except if trim_longer is set to True, in which case the sequence
+    will be trimmed to seq_length. It is important to set pad_token_id to the id of the
+    padding token in the tokenizer, otherwise the padding will not work.
+    """
+
+    def __init__(
+        self,
+        tokenizer,
+        dataset,
+        infinite=False,
+        seq_length=2048,
+        trim_longer=False,
+        content_field="content",
+        pad_token_id=None,
+    ):
+        self.tokenizer = tokenizer
+        if pad_token_id is not None:
+            self.tokenizer.pad_token_id = pad_token_id
+        elif self.tokenizer.pad_token_id is None:
+            # default to 0
+            self.tokenizer.pad_token_id = 0
+        else:
+            # we good, we have a pad token id preset
+            pass
+
+        print(f"Padded token id (PAD token): {self.tokenizer.pad_token_id}")
+        self.dataset = dataset
+        self.seq_length = seq_length
+        self.infinite = infinite
+        self.current_size = 0
+        self.content_field = content_field
+        self.trim_longer = trim_longer
+
+    def __iter__(self):
+        iterator = iter(self.dataset)
+        more_examples = True
+
+        while more_examples:
+            try:
+                content = next(iterator)[self.content_field]
+                tokenized_input = self.tokenizer(
+                    content,
+                    max_length=self.seq_length,
+                    truncation=self.trim_longer,
+                    padding='max_length',
+                    return_tensors="pt"
+                )["input_ids"].squeeze(0)
+
+                # Check the length if truncation is not allowed
+                if not self.trim_longer and len(tokenized_input) > self.seq_length:
+                    raise ValueError(
+                        f"A sequence is longer than {self.seq_length} tokens and trim_longer is set to False")
+
+                self.current_size += 1
+                yield {
+                    "input_ids": tokenized_input,
+                    "labels": tokenized_input.clone(),
+                }
+            except StopIteration:
+                if self.infinite:
+                    iterator = iter(self.dataset)
+                else:
+                    more_examples = False
