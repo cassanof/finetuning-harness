@@ -238,7 +238,7 @@ def create_datasets(tokenizer, args, tqdm=True):
     valid_dataset = ds_constructor(
         valid_data, infinite=False) if valid_data else None
 
-    if tqdm:
+    if tqdm and is_main(args):
         train_dataset = TQDMWraper(
             train_dataset, num_iters=training_examples, desc="Training")
         if valid_dataset:
