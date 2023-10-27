@@ -1,6 +1,7 @@
 # script to get the total number of tokens in a dataset
 from transformers import AutoTokenizer
 from datasets import load_dataset
+from torch.utils.data import IterableDataset
 import argparse
 from tqdm import tqdm
 
@@ -16,6 +17,17 @@ def get_total_tokens(dataset, tokenizer, data_column, nb_examples):
             total_tokens += len(tokenizer(text).tokens())
         else:
             total_tokens += len(tokenizer.tokenize(text))
+
+    return total_tokens
+
+
+def get_total_tokens_from_iterable(dataset: IterableDataset):
+    """
+    Get the total number of tokens in an IterableDataset.
+    """
+    total_tokens = 0
+    for example in tqdm(dataset):
+        total_tokens += len(example["input_ids"])
 
     return total_tokens
 
