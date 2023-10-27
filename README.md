@@ -3,7 +3,7 @@
 This repo provides the whole pizza for fine-tuning HuggingFace models (e.g. StarCoder, or Code LLama) on code generation tasks.
 It includes:
 
-1. Constant Length Dataset Loader
+1. Both Constant Length Dataset Loader and Padded Dataset Loader. The constant length one is good for "auto-regressive" code generation tuning (e.g. Copilot), while the padded one is typically better for instruction-tuning.
 2. Scaling laws for computing the correct number of steps, given number of gpus, effective batch size, and number of epochs
 3. LoRA, with 8, 4 bits and QLoRA (double quant) support
 4. DeepSpeed support for fine-tuning large models
