@@ -240,7 +240,7 @@ def create_datasets(tokenizer, args, tqdm=True):
 
     if tqdm and is_main(args):
         train_dataset = TQDMWraper(
-            train_dataset, num_iters=training_examples * args.epoch, desc="Training")
+            train_dataset, num_iters=training_examples * args.epochs, desc="Training")
         if valid_dataset:
             valid_dataset = TQDMWraper(
                 valid_dataset, desc="Evaluating")
