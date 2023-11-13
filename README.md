@@ -6,11 +6,12 @@ It includes:
 1. Both Constant Length Dataset Loader and Padded Dataset Loader. The constant length one is good for "auto-regressive" code generation tuning (e.g. Copilot), while the padded one is typically better for instruction-tuning.
 2. Scaling laws for computing the correct number of steps, given number of gpus, effective batch size, and number of epochs
 3. LoRA, with 8, 4 bits and QLoRA (double quant) support
-4. DeepSpeed support for fine-tuning large models
-5. Edu-score filtering to remove non-educational data
-6. Multi-language loss evaluation (using MultiPL-E evaluation datasets)
-7. Custom tokenizer injection
-8. Automatic mixed precision quantization
+4. FlashAttention2 for super-duper fast long sequence training
+5. DeepSpeed support for fine-tuning large models
+6. Edu-score filtering to remove non-educational data
+7. Multi-language loss evaluation (using MultiPL-E evaluation datasets)
+8. Custom tokenizer injection
+9. Automatic mixed precision quantization
 
 ## Generic Usage
 
