@@ -85,7 +85,9 @@ def get_arg_parser():
     parser.add_argument("--humaneval_eval_loss", action="store_true")
     parser.add_argument("--save_best_model", action="store_true")
     parser.add_argument("--lang", type=str, default="lua")
+
     parser.add_argument("--deepspeed", type=str)
+    parser.add_argument("--fa2", action="store_true")
     return parser
 
 
@@ -288,6 +290,7 @@ def run_training(args, max_steps, train_data, val_data):
         revision=args.model_revision,
         trust_remote_code=True,
         use_cache=not args.no_gradient_checkpointing,
+        use_flash_attention_2=args.fa2,
         **model_extra_kwargs,
     )
 
