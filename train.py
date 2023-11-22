@@ -6,6 +6,7 @@ import argparse
 import os
 
 import json
+from typing import Any, Dict
 import wandb
 import torch
 import time
@@ -21,7 +22,28 @@ from transformers import (
     BitsAndBytesConfig,
     Trainer,
     TrainingArguments,
+    TrainerCallback,
+    TrainerState,
+    TrainerControl,
 )
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+
+
+class SaveTokenizerCallback(TrainerCallback):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def on_save(
+        self,
+        args: TrainingArguments,
+        state: TrainerState,
+        control: TrainerControl,
+        **kwargs,
+    ):
+        checkpoint_folder = os.path.join(
+            args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
+        self.tokenizer.save_pretrained(checkpoint_folder)
+        return control
 
 
 def get_arg_parser():
@@ -368,9 +390,11 @@ def run_training(args, max_steps, train_data, val_data):
         wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
         wandb.init(name=wandb_name)
 
-    trainer_extra_kwargs = {}
+    trainer_extra_kwargs: Dict[str, Any] = {
+        "callbacks": [SaveTokenizerCallback],
+    }
     if args.lora:
-        trainer_extra_kwargs["callbacks"] = [SavePeftModelCallback]
+        trainer_extra_kwargs["callbacks"] += [SavePeftModelCallback]
 
     trainer = Trainer(
         model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, **trainer_extra_kwargs

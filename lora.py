@@ -2,33 +2,17 @@
 This file provides some components for the LoRA support of the trainer.
 """
 import peft
-import argparse
 import os
 
-import json
-import wandb
 import torch
-import random
-import time
-from datasets.load import load_dataset, load_from_disk
-from torch.utils.data import IterableDataset
-from number_of_tokens import get_total_tokens
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-from tqdm import tqdm
 from transformers import (
-    AutoModelForCausalLM,
-    BitsAndBytesConfig,
-    AutoTokenizer,
-    PreTrainedTokenizer,
     TrainerState,
     TrainerControl,
     TrainerCallback,
-    Trainer,
     TrainingArguments,
-    logging,
-    set_seed,
 )
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
+
 
 class SavePeftModelCallback(TrainerCallback):
     def on_save(
@@ -47,7 +31,6 @@ class SavePeftModelCallback(TrainerCallback):
             checkpoint_folder, "pytorch_model.bin")
         torch.save({}, pytorch_model_path)
         return control
-
 
 
 def hacky_model_convert(args, model):
