@@ -391,7 +391,7 @@ def run_training(args, max_steps, train_data, val_data):
         wandb.init(name=wandb_name)
 
     trainer_extra_kwargs: Dict[str, Any] = {
-        "callbacks": [SaveTokenizerCallback],
+        "callbacks": [SaveTokenizerCallback(train_data.get_tokenizer())],
     }
     if args.lora:
         trainer_extra_kwargs["callbacks"] += [SavePeftModelCallback]

@@ -73,6 +73,9 @@ class ConstantLengthDataset(IterableDataset):
                     "labels": torch.LongTensor(input_ids),
                 }
 
+    def get_tokenizer(self):
+        return self.tokenizer
+
 
 class PaddedDataset(IterableDataset):
     """
@@ -170,6 +173,9 @@ class PaddedDataset(IterableDataset):
                 "labels": torch.LongTensor(token_ids),
             }
 
+    def get_tokenizer(self):
+        return self.tokenizer
+
 
 class TQDMWraper(IterableDataset):
     def __init__(self, dataset, num_iters=None, desc=""):
@@ -180,6 +186,9 @@ class TQDMWraper(IterableDataset):
     def __iter__(self):
         for example in tqdm(self.dataset, total=self.num_iters, desc=self.desc):
             yield example
+
+    def get_tokenizer(self):
+        return self.dataset.get_tokenizer()
 
 
 if __name__ == "__main__":
