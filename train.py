@@ -394,7 +394,7 @@ def run_training(args, max_steps, train_data, val_data):
             last_chk = chks[-1]
             print(
                 f"***** Automatically detected checkpoint. Loading checkpoint from {last_chk} *****")
-            trainer.train(f"checkpoint-{last_chk}")
+            trainer.train(f"{args.output_dir}/checkpoint-{last_chk}")
         else:
             trainer.train()
 
