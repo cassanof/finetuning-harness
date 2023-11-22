@@ -14,6 +14,7 @@ from number_of_tokens import get_total_tokens, get_total_tokens_from_iterable
 from dataset_loader import ConstantLengthDataset, PaddedDataset, TQDMWraper
 from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from pathlib import Path
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
@@ -377,10 +378,25 @@ def run_training(args, max_steps, train_data, val_data):
 
     print("Training...")
     if args.checkpoint:
-        print(f"Loading checkpoint from {args.checkpoint}")
+        print(f"***** Loading checkpoint from {args.checkpoint} *****")
         trainer.train(args.checkpoint)
     else:
-        trainer.train()
+        # find latest checkpoint
+        chks = []
+        for checkpoint in Path(args.output_dir).glob("checkpoint-*"):
+            try:
+                num = int(checkpoint.name.split("-")[-1])
+                chks.append(num)
+            except ValueError:
+                continue
+        if len(chks) > 0:
+            chks.sort()
+            last_chk = chks[-1]
+            print(
+                f"***** Automatically detected checkpoint. Loading checkpoint from {last_chk} *****")
+            trainer.train(f"checkpoint-{last_chk}")
+        else:
+            trainer.train()
 
     if args.save_best_model:
         print("Saving best model...")
