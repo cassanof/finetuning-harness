@@ -1,7 +1,0 @@
-{
-  "errors": "replace",
-  "tokenizer_class": "GPT2TokenizerFast",
-  "bos_token": "<|endoftext|>",
-  "eos_token": "<|endoftext|>",
-  "model_max_length": 2048
-}
