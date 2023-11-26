@@ -4,7 +4,7 @@ authors:
 - family-names: "Cassano"
   given-names: "Federico"
   orcid: "https://orcid.org/0000-0000-0000-0000"
-title: "The BigCode Fine-Tuning Harness"
+title: "A Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks"
 version: 1.0.0
 date-released: 2023-6-20
 url: "https://github.com/cassanof/bigcode-finetuning-harness"

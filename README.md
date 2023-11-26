@@ -1,4 +1,4 @@
-# Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks
+# A Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks
 
 This repo provides the whole pizza for fine-tuning HuggingFace models (e.g. StarCoder, or Code LLama) on code generation tasks.
 It includes:
@@ -34,3 +34,18 @@ configs in this repo that can be used right away.
 The evaluation for the models is done via the `multipl_e_eval.sh` script, and it requires an installation
 of the [MultiPL-E](https://github.com/nuprl/MultiPL-E) repo. Through this script, you can evaluate
 different checkpoints at the same time using different GPUs on multiple languages and datasets (HumanEval or MBPP).
+
+# Citation
+
+If you use this code in your research, please cite it as follows:
+
+```
+@software{cassano2023finetuning,
+    author = {Cassano, Federico},
+    month = jun,
+    title = {{A Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks}},
+    url = {https://github.com/cassanof/bigcode-finetuning-harness},
+    version = {1.0.0},
+    year = {2023}
+}
+```
