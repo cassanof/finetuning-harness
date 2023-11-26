@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Cassano"
+  given-names: "Federico"
+  orcid: "https://orcid.org/0000-0000-0000-0000"
+title: "The BigCode Fine-Tuning Harness"
+version: 1.0.0
+date-released: 2023-6-20
+url: "https://github.com/cassanof/bigcode-finetuning-harness"
