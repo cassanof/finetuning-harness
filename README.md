@@ -1,17 +1,18 @@
-# A Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks
+# A Pipeline for Fine-Tuning HuggingFace Models
 
-This repo provides the whole pizza for fine-tuning HuggingFace models (e.g. StarCoder, or Code LLama) on code generation tasks.
-It includes:
+This repo provides the whole pizza for fine-tuning HuggingFace models (e.g. Llama2, DeepSeek, StarCoder, or Code Llama) on any task.
+_It has been built primarily for code generation tasks._
+The pipeline includes:
 
-1. Both Constant Length Dataset Loader and Padded Dataset Loader. The constant length one is good for "auto-regressive" code generation tuning (e.g. Copilot), while the padded one is typically better for instruction-tuning.
+1. Both Constant Length Dataset Loader and Padded Dataset Loader. The constant length one is good for code generation (e.g. Copilot) or "further pre-training", while the padded one is typically better for instruction-tuning.
 2. Scaling laws for computing the correct number of steps, given number of gpus, effective batch size, and number of epochs
 3. LoRA, with 8, 4 bits and QLoRA (double quant) support
 4. FlashAttention2 for super-duper fast long sequence training
-5. DeepSpeed support for fine-tuning large models
+5. DeepSpeed support for fine-tuning large models by offloading to multiple GPUs and the CPU
 6. Edu-score filtering to remove non-educational data
-7. Multi-language loss evaluation (using MultiPL-E evaluation datasets)
+7. Multi-programming-language loss evaluation (using MultiPL-E evaluation datasets)
 8. Custom tokenizer injection
-9. Automatic mixed precision quantization
+9. Automatic mixed precision
 
 ## Generic Usage
 
@@ -43,8 +44,8 @@ If you use this code in your research, please cite it as follows:
 @software{cassano2023finetuning,
     author = {Cassano, Federico},
     month = jun,
-    title = {{A Pipeline for Fine-Tuning HuggingFace Models On Code Generation Tasks}},
-    url = {https://github.com/cassanof/bigcode-finetuning-harness},
+    title = {{A Pipeline for Fine-Tuning HuggingFace Models}},
+    url = {https://github.com/cassanof/finetuning-harness},
     version = {1.0.0},
     year = {2023}
 }
