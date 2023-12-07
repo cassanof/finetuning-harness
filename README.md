@@ -27,14 +27,22 @@ There is additional support for some "lora hacks", like double quant, which can 
 ### DeepSpeed
 
 We support DeepSpeed and we recommend using it for training large models, instead of using LoRA.
-See `./run_starcoder.sh` or `./run_codellama_34b.sh` for an example. There are various deepspeed
+See `run_starcoder.sh` or `run_codellama_34b.sh` for an example. There are various deepspeed
 configs in this repo that can be used right away.
 
 ### Evaluation
 
 The evaluation for the models is done via the `multipl_e_eval.sh` script, and it requires an installation
-of the [MultiPL-E](https://github.com/nuprl/MultiPL-E) repo. Through this script, you can evaluate
+of the [MultiPL-E](https://github.com/nuprl/MultiPL-E) repo. This is an evaluation for code generation only.
+Through this script, you can evaluate
 different checkpoints at the same time using different GPUs on multiple languages and datasets (HumanEval or MBPP).
+
+### Pushing Checkpoints
+
+There are two scripts that can be used as helpers for pushing checkpoints to HuggingFace:
+
+1. `./scripts/load_and_push_to_hub.py` can be used to push a single checkpoint
+2. `./scripts/push_checkpoints.py` can be used to push multiple checkpoints in the given directory
 
 # Citation
 
