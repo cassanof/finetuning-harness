@@ -7,9 +7,8 @@
             "ratio": 0.5
         },
         "offload_param": {
-            "device": "cpu",
-            "pin_memory": true,
-            "ratio": 0.5
+            "device": "nvme",
+            "pin_memory": true
         },
         "overlap_comm": true,
         "contiguous_gradients": true,
