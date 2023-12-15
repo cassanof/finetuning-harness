@@ -8,7 +8,8 @@
         },
         "offload_param": {
             "device": "nvme",
-            "pin_memory": true
+            "pin_memory": true,
+            "nvme_path": "/tmp/deepspeed"
         },
         "overlap_comm": true,
         "contiguous_gradients": true,
