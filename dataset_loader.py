@@ -71,6 +71,7 @@ class ConstantLengthDataset(IterableDataset):
                 yield {
                     "input_ids": torch.LongTensor(input_ids),
                     "labels": torch.LongTensor(input_ids),
+                    "attention_mask": torch.ones(len(input_ids)),
                 }
 
     def get_tokenizer(self):
