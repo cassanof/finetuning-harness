@@ -33,6 +33,10 @@ def main(args):
         )
 
     max_steps, train_dataset, eval_dataset = create_datasets(tokenizer, args)
+    # suppress all dynamo errors
+    import torch._dynamo
+    torch._dynamo.config.suppress_errors = True
+
 
     run_training(args, max_steps, train_dataset, eval_dataset)
 
