@@ -307,6 +307,13 @@ def run_training(args, max_steps, train_data, val_data):
         model_extra_kwargs["quantization_config"] = BitsAndBytesConfig(
             **config)
 
+    if args.fa2:
+        # need to set dtype to either float16 or bfloat16
+        if args.bf16:
+            model_extra_kwargs["torch_dtype"] = torch.bfloat16
+        else:
+            model_extra_kwargs["torch_dtype"] = torch.float16
+
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
