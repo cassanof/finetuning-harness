@@ -69,8 +69,8 @@ class ConstantLengthDataset(IterableDataset):
             for input_ids in examples:
                 self.current_size += 1
                 yield {
-                    "input_ids": torch.LongTensor(input_ids),
-                    "labels": torch.LongTensor(input_ids),
+                    "input_ids": torch.tensor(input_ids, dtype=torch.long),
+                    "labels": torch.tensor(input_ids, dtype=torch.long),
                     "attention_mask": torch.ones(len(input_ids)),
                 }
 
@@ -170,8 +170,8 @@ class PaddedDataset(IterableDataset):
                              (self.seq_length - len(token_ids)))
 
             yield {
-                "input_ids": torch.LongTensor(token_ids),
-                "labels": torch.LongTensor(token_ids),
+                "input_ids": torch.tensor(token_ids, dtype=torch.long),
+                "labels": torch.tensor(token_ids, dtype=torch.long),
             }
 
     def get_tokenizer(self):
