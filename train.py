@@ -43,7 +43,6 @@ class SaveTokenizerCallback(TrainerCallback):
         checkpoint_folder = os.path.join(
             args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
         self.tokenizer.save_pretrained(checkpoint_folder)
-        return control
 
 
 def get_arg_parser():
@@ -85,10 +84,12 @@ def get_arg_parser():
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
+    parser.add_argument("--attention_dropout", type=float, default=0.1)
 
     parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument("--no_fp16", action="store_false")
     parser.add_argument("--bf16", action="store_true")
+    parser.add_argument("--torch_dtype", type=str, default=None)
     parser.add_argument("--no_gradient_checkpointing", action="store_false")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_workers", type=int, default=None)
@@ -273,6 +274,17 @@ def create_datasets(tokenizer, args, tqdm=True):
     return max_steps, train_dataset, valid_dataset
 
 
+def dtype_from_str(dtype_str):
+    if dtype_str == "float16":
+        return torch.float16
+    elif dtype_str == "bfloat16":
+        return torch.bfloat16
+    elif dtype_str == "float32":
+        return torch.float32
+    else:
+        raise ValueError(f"Invalid dtype: {dtype_str}")
+
+
 def run_training(args, max_steps, train_data, val_data):
     os.makedirs(args.output_dir, exist_ok=True)
     print(f"Loading the model.")
@@ -314,6 +326,9 @@ def run_training(args, max_steps, train_data, val_data):
         else:
             model_extra_kwargs["torch_dtype"] = torch.float16
 
+    if args.torch_dtype: # overrides everything else
+        model_extra_kwargs["torch_dtype"] = dtype_from_str(args.torch_dtype)
+
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
         args.model_path,
@@ -321,6 +336,7 @@ def run_training(args, max_steps, train_data, val_data):
         trust_remote_code=True,
         use_cache=not args.no_gradient_checkpointing,
         use_flash_attention_2=args.fa2,
+        attention_dropout=args.attention_dropout,
         **model_extra_kwargs,
     )
 
