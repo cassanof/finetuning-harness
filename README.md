@@ -30,6 +30,12 @@ We support DeepSpeed and we recommend using it for training large models, instea
 See `run_starcoder.sh` or `run_codellama_34b.sh` for an example. There are various deepspeed
 configs in this repo that can be used right away.
 
+### FlashAttention2
+
+If you need to train on long sequences, you can use FlashAttention2. This can be enabled by passing the `--fa2` flag.
+However, this will require you to install the [FlashAttention2](https://github.com/Dao-AILab/flash-attention)
+package, which is not included in the requirements.
+
 ### Evaluation
 
 The evaluation for the models is done via the `multipl_e_eval.sh` script, and it requires an installation
