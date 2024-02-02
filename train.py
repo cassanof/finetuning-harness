@@ -326,7 +326,7 @@ def run_training(args, max_steps, train_data, val_data):
         else:
             model_extra_kwargs["torch_dtype"] = torch.float16
 
-    if args.torch_dtype: # overrides everything else
+    if args.torch_dtype:  # overrides everything else
         model_extra_kwargs["torch_dtype"] = dtype_from_str(args.torch_dtype)
 
     # disable caching mechanism when using gradient checkpointing
@@ -412,7 +412,12 @@ def run_training(args, max_steps, train_data, val_data):
         model_name = args.model_path.rstrip("/").split("/")[-1]
         dataset_name = args.dataset_name.rstrip("/").split("/")[-1]
         wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
-        wandb.init(name=wandb_name)
+        try:
+            wandb.init(name=wandb_name)
+        except Exception as e:
+            print(
+                f"Failed to initialize wandb -- Can disable it with the `--no_wandb` option.\nError: {e}")
+            raise e
 
     trainer_extra_kwargs: Dict[str, Any] = {
         "callbacks": [SaveTokenizerCallback(train_data.get_tokenizer())],
