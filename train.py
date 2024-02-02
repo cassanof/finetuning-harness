@@ -7,7 +7,6 @@ import os
 
 import json
 from typing import Any, Dict
-import wandb
 import torch
 import time
 from datasets.load import load_dataset, load_from_disk
@@ -79,6 +78,7 @@ def get_arg_parser():
                         default="constant", choices=["constant", "padded"])
     parser.add_argument("--pad_token_id", type=int, default=None)
     parser.add_argument("--trim_longer", action="store_true")
+    parser.add_argument("--no_wandb", action="store_true")
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -399,13 +399,14 @@ def run_training(args, max_steps, train_data, val_data):
         fp16=args.no_fp16,
         bf16=args.bf16,
         weight_decay=args.weight_decay,
-        report_to=["wandb"],
+        report_to=["wandb"] if not args.no_wandb else [],
         load_best_model_at_end=args.save_best_model,
         ddp_find_unused_parameters=False,
         **extra_training_args,
     )
 
-    if is_main(args):
+    if is_main(args) and not args.no_wandb:
+        import wandb
         date = time.strftime("%Y-%m-%d-%H-%M")
         lora_str = "_lora" if args.lora else ""
         model_name = args.model_path.rstrip("/").split("/")[-1]
