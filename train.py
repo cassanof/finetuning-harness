@@ -424,12 +424,6 @@ def run_training(args, max_steps, train_data, val_data):
                 f"Failed to initialize wandb -- Can disable it with the `--no_wandb` option.\nError: {e}")
             raise e
 
-    if is_main(args) and args.deepspeed:
-        # print memory estimation
-        from deepspeed.runtime.zero.stage3 import estimate_zero3_model_states_mem_needs_all_live
-        estimate_zero3_model_states_mem_needs_all_live(
-            model, num_gpus_per_node=get_num_gpus(args), num_nodes=1)  # TODO: multi-node
-
     trainer_extra_kwargs: Dict[str, Any] = {
         "callbacks": [SaveTokenizerCallback(train_data.get_tokenizer())],
     }
