@@ -119,6 +119,10 @@ def is_main(args):
     return args.local_rank in [-1, 0]
 
 
+def get_rank(args):
+    return args.local_rank if args.local_rank != -1 else 0
+
+
 def chars_token_ratio(dataset, tokenizer, data_column, nb_examples=400):
     """
     Estimate the average number of characters per token in the dataset.
@@ -292,7 +296,6 @@ def dtype_from_str(dtype_str):
 
 def run_training(args, max_steps, train_data, val_data):
     os.makedirs(args.output_dir, exist_ok=True)
-    print(f"Loading the model.")
     model_extra_kwargs = {}
     if args.lora:
         config = {}
@@ -336,8 +339,6 @@ def run_training(args, max_steps, train_data, val_data):
 
     train_data.start_iteration = 0
 
-    print("Starting main loop")
-
     # calculate eval and save steps from max steps
     steps_per_epoch = max_steps // args.epochs
     eval_steps = int(steps_per_epoch * args.eval_freq)
@@ -375,6 +376,8 @@ def run_training(args, max_steps, train_data, val_data):
         ddp_find_unused_parameters=False,
         **extra_training_args,
     )
+
+    print(f"*** [{get_rank(args)}] Loading the model. ***")
 
     # disable caching mechanism when using gradient checkpointing
     model = AutoModelForCausalLM.from_pretrained(
@@ -434,7 +437,8 @@ def run_training(args, max_steps, train_data, val_data):
         model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, **trainer_extra_kwargs
     )
 
-    print("Training...")
+    print(f"*** [{get_rank(args)}] Training... ***")
+
     if args.checkpoint:
         print(f"***** Loading checkpoint from {args.checkpoint} *****")
         trainer.train(args.checkpoint)
