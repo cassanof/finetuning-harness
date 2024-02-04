@@ -170,6 +170,8 @@ class PaddedDataset(IterableDataset):
                              (self.seq_length - len(token_ids)))
 
             yield {
+                #  "input_ids": torch.LongTensor(token_ids),
+                #  "labels": torch.LongTensor(token_ids),
                 "input_ids": torch.tensor(token_ids, dtype=torch.long),
                 "labels": torch.tensor(token_ids, dtype=torch.long),
             }

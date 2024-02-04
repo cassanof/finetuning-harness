@@ -146,9 +146,14 @@ def print_trainable_parameters(model):
     )
 
 
-def create_datasets(tokenizer, args, tqdm=True):
+def get_num_gpus(args):
     # NOTE: using torch.cuda.device_count() isn't bulletproof, but it's good enough for our purposes
-    num_gpus = 1 if args.local_rank == -1 else torch.cuda.device_count()
+    return 1 if args.local_rank == -1 else torch.cuda.device_count()
+
+
+def create_datasets(tokenizer, args, tqdm=True):
+    # TODO: for multi-node, this won't work
+    num_gpus = get_num_gpus(args)
     # if dataset is a path, load it from the path
     if os.path.isdir(args.dataset_name):
         dataset = load_from_disk(args.dataset_name)
@@ -418,6 +423,12 @@ def run_training(args, max_steps, train_data, val_data):
             print(
                 f"Failed to initialize wandb -- Can disable it with the `--no_wandb` option.\nError: {e}")
             raise e
+
+    if is_main(args) and args.deepspeed:
+        # print memory estimation
+        from deepspeed.runtime.zero.stage3 import estimate_zero3_model_states_mem_needs_all_live
+        estimate_zero3_model_states_mem_needs_all_live(
+            model, num_gpus_per_node=get_num_gpus(args), num_nodes=1)  # TODO: multi-node
 
     trainer_extra_kwargs: Dict[str, Any] = {
         "callbacks": [SaveTokenizerCallback(train_data.get_tokenizer())],
