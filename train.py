@@ -408,7 +408,7 @@ def run_training(args, max_steps, train_data, val_data):
         model = get_peft_model(model, lora_config)
         hacky_model_convert(args, model)
 
-    print_trainable_parameters(model)
+    print_trainable_parameters(model) if not args.deepspeed else None
 
     if is_main(args) and not args.no_wandb:
         import wandb
