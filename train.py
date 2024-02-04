@@ -334,41 +334,7 @@ def run_training(args, max_steps, train_data, val_data):
     if args.torch_dtype:  # overrides everything else
         model_extra_kwargs["torch_dtype"] = dtype_from_str(args.torch_dtype)
 
-    # disable caching mechanism when using gradient checkpointing
-    model = AutoModelForCausalLM.from_pretrained(
-        args.model_path,
-        revision=args.model_revision,
-        trust_remote_code=True,
-        use_cache=not args.no_gradient_checkpointing,
-        use_flash_attention_2=args.fa2,
-        attention_dropout=args.attention_dropout,
-        **model_extra_kwargs,
-    )
-
     train_data.start_iteration = 0
-
-    if args.lora:
-        print("Preparing model for LoRA training")
-        prepare_model_for_kbit_training(
-            model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
-        all_linear_layers = find_all_linear_names(model)
-        added_modules = set(["c_proj", "c_attn", "q_attn"])
-        modules = list(added_modules.union(all_linear_layers))
-        print(f"Target modules: {modules}")
-        lora_config = LoraConfig(
-            r=args.lora_r,
-            lora_alpha=args.lora_alpha,
-            lora_dropout=args.lora_dropout,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules=modules,
-        )
-
-        model.enable_input_require_grads()
-        model = get_peft_model(model, lora_config)
-        hacky_model_convert(args, model)
-
-    print_trainable_parameters(model)
 
     print("Starting main loop")
 
@@ -409,6 +375,40 @@ def run_training(args, max_steps, train_data, val_data):
         ddp_find_unused_parameters=False,
         **extra_training_args,
     )
+
+    # disable caching mechanism when using gradient checkpointing
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model_path,
+        revision=args.model_revision,
+        trust_remote_code=True,
+        use_cache=not args.no_gradient_checkpointing,
+        use_flash_attention_2=args.fa2,
+        attention_dropout=args.attention_dropout,
+        **model_extra_kwargs,
+    )
+
+    if args.lora:
+        print("Preparing model for LoRA training")
+        prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=not args.no_gradient_checkpointing)
+        all_linear_layers = find_all_linear_names(model)
+        added_modules = set(["c_proj", "c_attn", "q_attn"])
+        modules = list(added_modules.union(all_linear_layers))
+        print(f"Target modules: {modules}")
+        lora_config = LoraConfig(
+            r=args.lora_r,
+            lora_alpha=args.lora_alpha,
+            lora_dropout=args.lora_dropout,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=modules,
+        )
+
+        model.enable_input_require_grads()
+        model = get_peft_model(model, lora_config)
+        hacky_model_convert(args, model)
+
+    print_trainable_parameters(model)
 
     if is_main(args) and not args.no_wandb:
         import wandb
