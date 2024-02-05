@@ -70,7 +70,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
       echo "Starting process $i with checkpoint ${ADDR[$i]} - output dir: $OUT_DIR"
       mkdir -p $OUT_DIR
       if [ $IS_LOCAL -eq 0 ]; then
-        CUDA_VISIBLE_DEVICES=$i python3 automodel_vllm.py \
+        CUDA_VISIBLE_DEVICES=$i python3 $SCRIPT \
             --name ${ADDR[$i]} \
             --root-dataset $DATASET \
             --lang $LANG \
@@ -79,7 +79,7 @@ for (( gi=0; gi<${#CHECKPOINT_GROUPS[@]}; gi++ )); do
             --temperature 0.2 \
             --output-dir $OUT_DIR &
       else
-        CUDA_VISIBLE_DEVICES=$i python3 automodel_vllm.py \
+        CUDA_VISIBLE_DEVICES=$i python3 $SCRIPT \
             --name ${ADDR[$i]} \
             --use-local \
             --dataset $DATASET \
