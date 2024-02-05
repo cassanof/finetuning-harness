@@ -22,6 +22,14 @@ else
   V_COMP_LIMIT="$COMP_LIMIT"
 fi
 
+# if ENGINE is defined, set SCRIPT
+if [[ -z "${ENGINE}" ]]; then
+  echo "ENGINE is not defined, defaulting to automodel_vllm.py"
+  SCRIPT="automodel_vllm.py"
+else
+  SCRIPT="$ENGINE"
+fi
+
 IS_LOCAL=1
 # if the DATASET is "humaneval" or "mbpp", set IS_LOCAL to 0
 if [ $DATASET == "humaneval" ] || [ $DATASET == "mbpp" ]; then
