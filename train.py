@@ -84,7 +84,7 @@ def get_arg_parser():
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
-    parser.add_argument("--attention_dropout", type=float, default=0.1)
+    parser.add_argument("--attention_dropout", type=float, default=None)
 
     parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument("--no_fp16", action="store_false")
@@ -337,6 +337,9 @@ def run_training(args, max_steps, train_data, val_data):
     if args.torch_dtype:  # overrides everything else
         model_extra_kwargs["torch_dtype"] = dtype_from_str(args.torch_dtype)
 
+    if args.attention_dropout is not None: # some models dont support this
+        model_extra_kwargs["attention_dropout"] = args.attention_dropout
+
     train_data.start_iteration = 0
 
     # calculate eval and save steps from max steps
@@ -386,7 +389,6 @@ def run_training(args, max_steps, train_data, val_data):
         trust_remote_code=True,
         use_cache=not args.no_gradient_checkpointing,
         use_flash_attention_2=args.fa2,
-        attention_dropout=args.attention_dropout,
         **model_extra_kwargs,
     )
 
