@@ -159,6 +159,7 @@ def get_num_gpus(args):
 
 
 def load_source_dataset(args):
+    num_gpus = get_num_gpus(args)
     # if dataset is a path, load it from the path
     if os.path.isdir(args.dataset_name):
         dataset = load_from_disk(args.dataset_name)
