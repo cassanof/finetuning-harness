@@ -9,6 +9,7 @@ import json
 from typing import Any, Dict
 import torch
 import time
+from push_checkpoints import push_checkpoints
 from datasets.load import load_dataset, load_from_disk
 from datasets import DatasetDict
 from number_of_tokens import get_total_tokens, get_total_tokens_from_iterable
@@ -104,6 +105,7 @@ def get_arg_parser():
     parser.add_argument("--checkpoint", type=str, default=None)
     parser.add_argument("--save_strategy", type=str, default="steps")
     parser.add_argument("--save_total_limit", type=int, default=10)
+    parser.add_argument("--push_to_hub", type=str, default=None)
     parser.add_argument("--local-rank", type=int, default=0)
     parser.add_argument("--custom_tokenizer", type=str, default=None)
 
@@ -473,6 +475,9 @@ def run_training(args, max_steps, train_data, val_data):
             trainer.train(f"{args.output_dir}/checkpoint-{last_chk}")
         else:
             trainer.train()
+
+    if args.push_to_hub:
+        push_checkpoints(args.output_dir, args.push_to_hub)
 
     if args.save_best_model:
         print("Saving best model...")
