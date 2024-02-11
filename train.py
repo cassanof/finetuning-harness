@@ -337,7 +337,7 @@ def run_training(args, max_steps, train_data, val_data):
     if args.torch_dtype:  # overrides everything else
         model_extra_kwargs["torch_dtype"] = dtype_from_str(args.torch_dtype)
 
-    if args.attention_dropout is not None: # some models dont support this
+    if args.attention_dropout is not None:  # some models dont support this
         model_extra_kwargs["attention_dropout"] = args.attention_dropout
 
     train_data.start_iteration = 0
