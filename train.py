@@ -10,6 +10,7 @@ from typing import Any, Dict
 import torch
 import time
 from datasets.load import load_dataset, load_from_disk
+from datasets import DatasetDict
 from number_of_tokens import get_total_tokens, get_total_tokens_from_iterable
 from dataset_loader import ConstantLengthDataset, PaddedDataset, TQDMWraper
 from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
@@ -155,12 +156,14 @@ def get_num_gpus(args):
     return 1 if args.local_rank == -1 else torch.cuda.device_count()
 
 
-def create_datasets(tokenizer, args, tqdm=True):
-    # TODO: for multi-node, this won't work
-    num_gpus = get_num_gpus(args)
+def load_source_dataset(args):
     # if dataset is a path, load it from the path
     if os.path.isdir(args.dataset_name):
-        dataset = load_from_disk(args.dataset_name)[args.split]
+        dataset = load_from_disk(args.dataset_name)
+        # if DatasetDict, select the split
+        if isinstance(dataset, DatasetDict):
+            dataset = dataset[args.split]
+
     else:
         kwargs = {}
         if args.subset:
@@ -172,6 +175,15 @@ def create_datasets(tokenizer, args, tqdm=True):
             num_proc=args.num_workers // num_gpus,
             **kwargs,
         )
+
+    return dataset
+
+
+def create_dataloaders(tokenizer, args, tqdm=True):
+    # TODO: for multi-node, this won't work
+    num_gpus = get_num_gpus(args)
+
+    dataset = load_source_dataset(args)
 
     eval_dataset = None
     if args.humaneval_eval_loss:

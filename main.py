@@ -4,7 +4,7 @@ from transformers import (
     logging,
     set_seed,
 )
-from train import load_special_tokens, create_datasets, run_training, get_arg_parser
+from train import load_special_tokens, create_dataloaders, run_training, get_arg_parser
 
 
 def get_args_from_cli():
@@ -32,7 +32,7 @@ def main(args):
             padding_side="right",
         )
 
-    max_steps, train_dataset, eval_dataset = create_datasets(tokenizer, args)
+    max_steps, train_dataset, eval_dataset = create_dataloaders(tokenizer, args)
     # suppress all dynamo errors
     import torch._dynamo
     torch._dynamo.config.suppress_errors = True
