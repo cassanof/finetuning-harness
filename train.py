@@ -99,8 +99,8 @@ class BetterTrainer(Trainer):
         *args,
         **kwargs,
     ):
-        self.neftune_noise_alpha = neftune_noise_alpha
         super().__init__(*args, **kwargs)
+        self.neftune_noise_alpha = neftune_noise_alpha
 
     @wraps(Trainer.train)
     def train(self, *args, **kwargs):  # NOTE: copypasted from TRL
