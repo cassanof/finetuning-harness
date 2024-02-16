@@ -117,7 +117,8 @@ class BetterTrainer(Trainer):
             embeddings = unwrapped_model.get_input_embeddings()
 
             self.neftune_hook_handle.remove()
-            del embeddings.neftune_noise_alpha
+            if hasattr(embeddings, "neftune_noise_alpha"):
+                del embeddings.neftune_noise_alpha
 
         return output
 
