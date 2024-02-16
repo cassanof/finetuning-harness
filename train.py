@@ -3,11 +3,13 @@ Code adapted from: https://github.com/loubnabnl/santacoder-finetuning
 """
 
 import argparse
+from functools import wraps
 import os
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import torch
+import torch.nn as nn
 import time
 from push_checkpoints import push_checkpoints
 from datasets.load import load_dataset, load_from_disk
@@ -44,6 +46,95 @@ class SaveTokenizerCallback(TrainerCallback):
         checkpoint_folder = os.path.join(
             args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
         self.tokenizer.save_pretrained(checkpoint_folder)
+
+
+def neftune_post_forward_hook(module, input, output):  # NOTE: copypasted from TRL
+    """
+    Implements the NEFTune forward pass for the model using forward hooks. Note this works only for
+    torch.nn.Embedding layers. This method is slightly adapted from the original source code
+    that can be found here: https://github.com/neelsjain/NEFTune
+
+    Simply add it to your model as follows:
+    ```python
+    model = ...
+    model.embed_tokens.neftune_noise_alpha = 0.1
+    model.embed_tokens.register_forward_hook(neftune_post_forward_hook)
+    ```
+
+    Args:
+        module (`torch.nn.Module`):
+            The embedding module where the hook is attached. Note that you need to set
+            `module.neftune_noise_alpha` to the desired noise alpha value.
+        input (`torch.Tensor`):
+            The input tensor to the model.
+        output (`torch.Tensor`):
+            The output tensor of the model (i.e. the embeddings).
+    """
+    if module.training:
+        dims = torch.tensor(output.size(1) * output.size(2))
+        mag_norm = module.neftune_noise_alpha / torch.sqrt(dims)
+        output = output + \
+            torch.zeros_like(output).uniform_(-mag_norm, mag_norm)
+    return output
+
+
+def unwrap_model(model: nn.Module) -> nn.Module:  # NOTE: copypasted from TRL
+    """
+    Recursively unwraps a model from potential containers (as used in distributed training).
+
+    Args:
+        model (`torch.nn.Module`): The model to unwrap.
+    """
+    # since there could be multiple levels of wrapping, unwrap recursively
+    if hasattr(model, "module"):
+        return unwrap_model(model.module)
+    else:
+        return model
+
+
+class BetterTrainer(Trainer):
+    def __init__(
+        self,
+        neftune_noise_alpha: Optional[float] = None,
+        *args,
+        **kwargs,
+    ):
+        self._trainer_supports_neftune = hasattr(args, "neftune_noise_alpha")
+        self.neftune_noise_alpha = neftune_noise_alpha
+        super().__init__(*args, **kwargs)
+
+    @wraps(Trainer.train)
+    def train(self, *args, **kwargs):  # NOTE: copypasted from TRL
+        # Activate neftune right before training.
+        if self.neftune_noise_alpha is not None and not self._trainer_supports_neftune:
+            self.model = self._trl_activate_neftune(self.model)
+
+        output = super().train(*args, **kwargs)
+
+        # After training we make sure to retrieve back the original forward pass method
+        # for the embedding layer by removing the forward post hook.
+        if self.neftune_noise_alpha is not None and not self._trainer_supports_neftune:
+            unwrapped_model = unwrap_model(self.model)
+            embeddings = unwrapped_model.get_input_embeddings()
+
+            self.neftune_hook_handle.remove()
+            del embeddings.neftune_noise_alpha
+
+        return output
+
+    def _trl_activate_neftune(self, model):  # NOTE: copypasted from TRL
+        r"""
+        Activates the neftune as presented in this code: https://github.com/neelsjain/NEFTune and paper: https://arxiv.org/abs/2310.05914
+        Since in transformers Trainer we do have an `_activate_neftune` method, we need to rename this method to avoid conflicts.
+        """
+        unwrapped_model = unwrap_model(model)
+        embeddings = unwrapped_model.get_input_embeddings()
+
+        embeddings.neftune_noise_alpha = self.neftune_noise_alpha
+        hook_handle = embeddings.register_forward_hook(
+            neftune_post_forward_hook)
+        self.neftune_hook_handle = hook_handle
+        return model
 
 
 def get_arg_parser():
@@ -87,6 +178,7 @@ def get_arg_parser():
     parser.add_argument("--num_warmup_steps", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0.05)
     parser.add_argument("--attention_dropout", type=float, default=None)
+    parser.add_argument("--neft_alpha", type=float, default=None)
 
     parser.add_argument("--local_rank", type=int, default=-1)
     parser.add_argument("--no_fp16", action="store_false")
@@ -450,8 +542,13 @@ def run_training(args, max_steps, train_data, val_data):
     if args.lora:
         trainer_extra_kwargs["callbacks"] += [SavePeftModelCallback]
 
-    trainer = Trainer(
-        model=model, args=training_args, train_dataset=train_data, eval_dataset=val_data, **trainer_extra_kwargs
+    trainer = BetterTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_data,
+        eval_dataset=val_data,
+        neftune_noise_alpha=args.neft_alpha,
+        **trainer_extra_kwargs
     )
 
     print(f"*** [{get_rank(args)}] Training... ***")
