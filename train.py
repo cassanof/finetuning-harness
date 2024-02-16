@@ -99,21 +99,20 @@ class BetterTrainer(Trainer):
         *args,
         **kwargs,
     ):
-        self._trainer_supports_neftune = hasattr(args, "neftune_noise_alpha")
         self.neftune_noise_alpha = neftune_noise_alpha
         super().__init__(*args, **kwargs)
 
     @wraps(Trainer.train)
     def train(self, *args, **kwargs):  # NOTE: copypasted from TRL
         # Activate neftune right before training.
-        if self.neftune_noise_alpha is not None and not self._trainer_supports_neftune:
+        if self.neftune_noise_alpha is not None:
             self.model = self._trl_activate_neftune(self.model)
 
         output = super().train(*args, **kwargs)
 
         # After training we make sure to retrieve back the original forward pass method
         # for the embedding layer by removing the forward post hook.
-        if self.neftune_noise_alpha is not None and not self._trainer_supports_neftune:
+        if self.neftune_noise_alpha is not None:
             unwrapped_model = unwrap_model(self.model)
             embeddings = unwrapped_model.get_input_embeddings()
 
@@ -127,6 +126,7 @@ class BetterTrainer(Trainer):
         Activates the neftune as presented in this code: https://github.com/neelsjain/NEFTune and paper: https://arxiv.org/abs/2310.05914
         Since in transformers Trainer we do have an `_activate_neftune` method, we need to rename this method to avoid conflicts.
         """
+        print("*** Activating NEFTune ***")
         unwrapped_model = unwrap_model(model)
         embeddings = unwrapped_model.get_input_embeddings()
 
