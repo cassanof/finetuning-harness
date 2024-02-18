@@ -1,3 +1,4 @@
+from typing import List
 from torch.utils.data import IterableDataset
 from tqdm import tqdm
 import random
@@ -99,6 +100,8 @@ class PaddedDataset(IterableDataset):
         concat_token_id=None,
         pad_token_id=None,
         trim_longer=False,
+        # niche option for some instruct tasks. removes loss calculation for tokens before a certain token id (example-wise and inclusive)
+        mask_loss_till_token_id=None,
     ):
         self.tokenizer = tokenizer
         self.concat_token_id = concat_token_id if concat_token_id is not None else tokenizer.eos_token_id
@@ -107,6 +110,7 @@ class PaddedDataset(IterableDataset):
         self.infinite = infinite
         self.content_field = content_field
         self.trim_longer = trim_longer
+        self.mask_loss_till_token_id = mask_loss_till_token_id
         if pad_token_id is not None:
             self.pad_token_id = pad_token_id
         elif self.tokenizer.pad_token_id is None:
@@ -169,15 +173,54 @@ class PaddedDataset(IterableDataset):
             token_ids.extend([self.pad_token_id] *
                              (self.seq_length - len(token_ids)))
 
+            labels = token_ids
+            if self.mask_loss_till_token_id is not None:
+                labels = apply_mask_till_token_id(
+                    labels,
+                    mask_till_token_id=self.mask_loss_till_token_id,
+                    concat_token_id=self.concat_token_id,
+                    pad_token_id=self.pad_token_id,
+                )
+
             yield {
-                #  "input_ids": torch.LongTensor(token_ids),
-                #  "labels": torch.LongTensor(token_ids),
                 "input_ids": torch.tensor(token_ids, dtype=torch.long),
-                "labels": torch.tensor(token_ids, dtype=torch.long),
+                "labels": torch.tensor(labels, dtype=torch.long),
             }
 
     def get_tokenizer(self):
         return self.tokenizer
+
+
+def apply_mask_till_token_id(
+        token_ids: List[int],
+        mask_till_token_id: int,
+        concat_token_id: int,
+        pad_token_id: int,
+        mask=-100,
+):
+    # notes:
+    #   - stop condition: we reach the end of the sequence or we find pad_token_id and evey token after it is pad_token_id
+    #   - concat_token_id delimiates examples. we need to start re-masking from this token_id
+    #   - mask_till_token_id is the token that dictates the end of the masking (we also mask this token)
+
+    masked = []
+    masking = True
+    masking_off_forever = False
+    for i, token in enumerate(token_ids):
+        if token == pad_token_id and all([t == pad_token_id or t == concat_token_id for t in token_ids[i:]]):
+            masking_off_forever = True
+
+        if masking and not masking_off_forever:
+            masked.append(mask)
+        else:
+            masked.append(token)
+
+        if token == mask_till_token_id:
+            masking = False
+        if token == concat_token_id:
+            masking = True
+
+    return masked
 
 
 class TQDMWraper(IterableDataset):
@@ -210,5 +253,5 @@ if __name__ == "__main__":
             print(decoded)
         num_exs += decoded.count("### Instruction:")
 
+    print(ds)
     print(f"Total number of examples: {num_exs}")
-    print(f"Total number of examples in the dataset: {len(ds)}")

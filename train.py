@@ -172,7 +172,7 @@ def get_arg_parser():
                         default="constant", choices=["constant", "padded"])
     parser.add_argument("--pad_token_id", type=int, default=None)
     parser.add_argument("--trim_longer", action="store_true")
-    parser.add_argument("--no_wandb", action="store_true")
+    parser.add_argument("--mask_loss_till_token_id", type=int, default=None)
 
     parser.add_argument("--learning_rate", type=float, default=5e-5)
     parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
@@ -190,6 +190,7 @@ def get_arg_parser():
     parser.add_argument("--num_workers", type=int, default=None)
     parser.add_argument("--output_dir", type=str, default="./checkpoints")
     parser.add_argument("--log_freq", default=1, type=int)
+    parser.add_argument("--no_wandb", action="store_true")
     parser.add_argument("--eval_freq", default=1.0, type=float,
                         help="Evaluate X times per epoch, can be < 1")
     parser.add_argument("--save_freq", default=1.0, type=float,
@@ -335,6 +336,7 @@ def create_dataloaders(tokenizer, args, tqdm=True):
             content_field=args.data_column,
             pad_token_id=args.pad_token_id,
             trim_longer=args.trim_longer,
+            mask_loss_till_token_id=args.mask_loss_till_token_id,
         )
     else:
         raise ValueError(
