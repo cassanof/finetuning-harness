@@ -175,6 +175,7 @@ class PaddedDataset(IterableDataset):
                              (self.seq_length - len(token_ids)))
 
             labels = token_ids
+            # TODO: this is awful and just for experimentation, clean it up
             if self.mask_loss_till_token_id is not None:
                 labels = apply_mask_till_token_id(
                     labels,
