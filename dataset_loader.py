@@ -101,7 +101,7 @@ class PaddedDataset(IterableDataset):
         pad_token_id=None,
         trim_longer=False,
         # niche option for some instruct tasks. removes loss calculation for tokens before a certain token id (example-wise and inclusive)
-        # this token is a marker and gets removed from the input_ids and labels
+        # IMPORTANT: this token is a marker and gets removed from the input_ids and labels
         mask_loss_till_token_id=None,
     ):
         self.tokenizer = tokenizer
