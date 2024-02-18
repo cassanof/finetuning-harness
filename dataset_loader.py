@@ -185,14 +185,14 @@ class PaddedDataset(IterableDataset):
                 # remove the mask_till_token_id from the input_ids and labels
                 token_ids = [t for t in token_ids if t !=
                              self.mask_loss_till_token_id]
-                labels = [t for t in labels if t !=
-                          self.mask_loss_till_token_id]
+                assert len(token_ids) == len(labels)
 
                 # pad to seq_length
                 token_ids.extend([self.pad_token_id] *
                                  (self.seq_length - len(token_ids)))
                 labels.extend([self.pad_token_id] *
                               (self.seq_length - len(labels)))
+                assert len(token_ids) == len(labels)
 
             yield {
                 "input_ids": torch.tensor(token_ids, dtype=torch.long),
@@ -224,7 +224,7 @@ def apply_mask_till_token_id(
 
         if token == mask_till_token_id:
             masking = False
-        else:
+        else:  # do not add if mask token
             if masking and not masking_off_forever:
                 masked.append(mask)
             else:
