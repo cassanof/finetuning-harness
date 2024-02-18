@@ -101,6 +101,7 @@ class PaddedDataset(IterableDataset):
         pad_token_id=None,
         trim_longer=False,
         # niche option for some instruct tasks. removes loss calculation for tokens before a certain token id (example-wise and inclusive)
+        # this token is a marker and gets removed from the input_ids and labels
         mask_loss_till_token_id=None,
     ):
         self.tokenizer = tokenizer
@@ -181,6 +182,17 @@ class PaddedDataset(IterableDataset):
                     concat_token_id=self.concat_token_id,
                     pad_token_id=self.pad_token_id,
                 )
+                # remove the mask_till_token_id from the input_ids and labels
+                token_ids = [t for t in token_ids if t !=
+                             self.mask_loss_till_token_id]
+                labels = [t for t in labels if t !=
+                          self.mask_loss_till_token_id]
+
+                # pad to seq_length
+                token_ids.extend([self.pad_token_id] *
+                                 (self.seq_length - len(token_ids)))
+                labels.extend([self.pad_token_id] *
+                              (self.seq_length - len(labels)))
 
             yield {
                 "input_ids": torch.tensor(token_ids, dtype=torch.long),
@@ -210,13 +222,14 @@ def apply_mask_till_token_id(
         if token == pad_token_id and all([t == pad_token_id or t == concat_token_id for t in token_ids[i:]]):
             masking_off_forever = True
 
-        if masking and not masking_off_forever:
-            masked.append(mask)
-        else:
-            masked.append(token)
-
         if token == mask_till_token_id:
             masking = False
+        else:
+            if masking and not masking_off_forever:
+                masked.append(mask)
+            else:
+                masked.append(token)
+
         if token == concat_token_id:
             masking = True
 
