@@ -198,6 +198,8 @@ class PaddedDataset(IterableDataset):
             yield {
                 "input_ids": torch.tensor(token_ids, dtype=torch.long),
                 "labels": torch.tensor(labels, dtype=torch.long),
+                # TODO: this is not 100% optimal, but it's fine for now; we use right padding
+                "attention_mask": torch.ones(len(token_ids)),
             }
 
     def get_tokenizer(self):
