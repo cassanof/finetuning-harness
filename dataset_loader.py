@@ -123,6 +123,9 @@ class PaddedDataset(IterableDataset):
 
         print(f"Concat token id (EOS token): {self.concat_token_id}")
         print(f"Pad token id: {self.pad_token_id}")
+        if self.mask_loss_till_token_id is not None:
+            print(
+                f"Masking loss till token id: {self.mask_loss_till_token_id}")
 
     def __iter__(self):
         iterator = iter(self.dataset)
