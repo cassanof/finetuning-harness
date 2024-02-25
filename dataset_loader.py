@@ -166,7 +166,7 @@ class PaddedDataset(IterableDataset):
             assert buffer_len <= self.seq_length
 
             # shuffle the buffer
-            random.shuffle(buffer)
+            #  random.shuffle(buffer)
 
             # concatenate all sequences
             token_ids = []
