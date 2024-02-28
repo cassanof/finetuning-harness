@@ -290,8 +290,7 @@ def create_dataloaders(tokenizer, args, tqdm=True):
 
     if args.humaneval_eval_loss:
         valid_data = eval_dataset
-        train_data = dataset if args.no_shuffle_train else dataset.shuffle(
-            seed=args.seed)
+        train_data = dataset
     elif args.perc_valid_set == 0:
         train_data = dataset
         valid_data = None
@@ -309,6 +308,9 @@ def create_dataloaders(tokenizer, args, tqdm=True):
             valid_data = valid_data.filter(
                 lambda example: example[args.edu_score_column] >= args.min_edu_score
             )
+
+    if not args.no_shuffle_train:
+        train_data = train_data.shuffle(seed=args.seed)
 
     print(
         f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data) if valid_data else None}"
