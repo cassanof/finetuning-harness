@@ -481,7 +481,7 @@ def run_training(args, max_steps, train_data, val_data):
 
     training_args = TrainingArguments(
         output_dir=args.output_dir,
-        torch_compile=True,
+        torch_compile=False,
         dataloader_drop_last=True,
         evaluation_strategy="steps" if eval_steps else "no",
         max_steps=max_steps,
