@@ -513,8 +513,6 @@ def run_training(args, max_steps, train_data, val_data):
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
-        use_cache=not args.no_gradient_checkpointing,
-        use_flash_attention_2=args.fa2,
         **model_extra_kwargs,
     )
 
