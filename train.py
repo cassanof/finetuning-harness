@@ -174,7 +174,7 @@ def get_arg_parser():
     parser.add_argument("--no_shuffle_train", action="store_true",
                         help="Do not shuffle the training set.")
     parser.add_argument("--objective", type=str, default="lm",
-                        choices=["lm", "classification"],
+                        choices=["lm", "seqcls"],
                         help="Objective to train on.")
 
     parser.add_argument("--lora", action="store_true", help="Enable LoRA.")
@@ -478,7 +478,7 @@ def get_model_class(args):
     """
     if args.objective == "lm":
         return AutoModelForCausalLM
-    elif args.objective == "classification":
+    elif args.objective == "seqcls":
         return AutoModelForSequenceClassification
     else:
         raise ValueError(f"Invalid training objective: {args.objective}")
