@@ -7,13 +7,13 @@ from functools import wraps
 import os
 
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 import torch
 import torch.nn as nn
 import time
 from push_checkpoints import push_checkpoints
 from datasets.load import load_dataset, load_from_disk
-from datasets import DatasetDict
+from datasets import DatasetDict, Dataset
 from number_of_tokens import get_total_tokens, get_total_tokens_from_iterable
 from dataset_loader import ConstantLengthDataset, PaddedDataset, TQDMWraper
 from lora import hacky_model_convert, find_all_linear_names, SavePeftModelCallback
@@ -22,6 +22,7 @@ from pathlib import Path
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
+    AutoModelForSequenceClassification,
     BitsAndBytesConfig,
     Trainer,
     TrainingArguments,
@@ -76,6 +77,16 @@ def neftune_post_forward_hook(module, input, output):  # NOTE: copypasted from T
         output = output + \
             torch.zeros_like(output).uniform_(-mag_norm, mag_norm)
     return output
+
+
+def load_special_tokens(tokenizer):
+    """
+    Loads the special tokens from the special_tokens_map.json file.
+    """
+    thisFolder = os.path.dirname(os.path.abspath(__file__))
+    file = open(os.path.join(thisFolder, "special_tokens_map.json"))
+    special_tokens_map = json.load(file)
+    tokenizer.add_special_tokens(special_tokens_map)
 
 
 def unwrap_model(model: nn.Module) -> nn.Module:  # NOTE: copypasted from TRL
@@ -162,6 +173,9 @@ def get_arg_parser():
                         help="Column of the dataset to use as education score.")
     parser.add_argument("--no_shuffle_train", action="store_true",
                         help="Do not shuffle the training set.")
+    parser.add_argument("--objective", type=str, default="lm",
+                        choices=["lm", "classification"],
+                        help="Objective to train on.")
 
     parser.add_argument("--lora", action="store_true", help="Enable LoRA.")
     parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank.")
@@ -253,10 +267,16 @@ def get_arg_parser():
 
 
 def is_main(args):
+    """
+    Returns True if the process is the main process.
+    """
     return args.local_rank in [-1, 0]
 
 
 def get_rank(args):
+    """
+    Returns the rank of the process.
+    """
     return args.local_rank if args.local_rank != -1 else 0
 
 
@@ -288,11 +308,17 @@ def print_trainable_parameters(model):
 
 
 def get_num_gpus(args):
+    """
+    Returns the number of GPUs used in the training.
+    """
     # NOTE: using torch.cuda.device_count() isn't bulletproof, but it's good enough for our purposes
     return 1 if args.local_rank == -1 else torch.cuda.device_count()
 
 
 def load_source_dataset(args):
+    """
+    Loads the source dataset from the given arguments.
+    """
     num_gpus = get_num_gpus(args)
     # if dataset is a path, load it from the path
     if os.path.isdir(args.dataset_name):
@@ -316,12 +342,10 @@ def load_source_dataset(args):
     return dataset
 
 
-def create_dataloaders(tokenizer, args, tqdm=True):
-    # TODO: for multi-node, this won't work
-    num_gpus = get_num_gpus(args)
-
-    dataset = load_source_dataset(args)
-
+def dataset_splits(dataset, args) -> Tuple[Dataset, Optional[Dataset]]:
+    """
+    Splits the dataset into training and validation sets based on the arguments.
+    """
     if args.eval_dataset:
         valid_data = load_dataset(args.eval_dataset, split="test")
         train_data = dataset
@@ -346,25 +370,28 @@ def create_dataloaders(tokenizer, args, tqdm=True):
     if not args.no_shuffle_train:
         train_data = train_data.shuffle(seed=args.seed)
 
-    print(
-        f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data) if valid_data else None}"
-    )
-    chars_per_token = chars_token_ratio(
-        train_data, tokenizer, args.data_column)
-    print(
-        f"The character to token ratio of the dataset is: {chars_per_token:.2f}")
+    return train_data, valid_data
 
+
+def dataset_loader_constructor_factory(tokenizer, args):
+    """
+    Returns the dataset loader constructor based on the arguments.
+    """
     if args.dataset_loader == "constant":
-        def ds_constructor(data, infinite): return ConstantLengthDataset(
+        ctr = chars_token_ratio(
+            load_source_dataset(args), tokenizer, args.data_column)
+        print(
+            f"The character to token ratio of the dataset is: {ctr:.2f}")
+        return lambda data, infinite: ConstantLengthDataset(
             tokenizer,
             data,
             infinite=infinite,
             seq_length=args.seq_length,
-            chars_per_token=chars_per_token,
+            chars_per_token=ctr,
             content_field=args.data_column,
         )
     elif args.dataset_loader == "padded":
-        def ds_constructor(data, infinite): return PaddedDataset(
+        return lambda data, infinite: PaddedDataset(
             tokenizer,
             data,
             infinite=infinite,
@@ -376,7 +403,23 @@ def create_dataloaders(tokenizer, args, tqdm=True):
         )
     else:
         raise ValueError(
-            f"Invalid dataset loader: {args.dataset_loader}. Must be 'constant' or 'padded'.")
+            f"Invalid dataset loader: {args.dataset_loader}.")
+
+
+def create_dataloaders(tokenizer, args, tqdm=True):
+    """
+    Creates the dataset loaders for training and validation.
+    """
+    # TODO: for multi-node, this won't work
+    num_gpus = get_num_gpus(args)
+
+    train_data, valid_data = dataset_splits(load_source_dataset(args), args)
+
+    print(
+        f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data) if valid_data else None}"
+    )
+
+    ds_constructor = dataset_loader_constructor_factory(tokenizer, args)
 
     total_tokens = args.total_tokens
     if total_tokens is None:
@@ -429,7 +472,22 @@ def create_dataloaders(tokenizer, args, tqdm=True):
     return max_steps, train_dataset, valid_dataset
 
 
+def get_model_class(args):
+    """
+    Returns the model class based on the arguments.
+    """
+    if args.objective == "lm":
+        return AutoModelForCausalLM
+    elif args.objective == "classification":
+        return AutoModelForSequenceClassification
+    else:
+        raise ValueError(f"Invalid training objective: {args.objective}")
+
+
 def dtype_from_str(dtype_str):
+    """
+    Converts the string representation of a dtype to a torch dtype.
+    """
     if dtype_str == "float16":
         return torch.float16
     elif dtype_str == "bfloat16":
@@ -441,6 +499,9 @@ def dtype_from_str(dtype_str):
 
 
 def run_training(args, max_steps, train_data, val_data):
+    """
+    Runs the training loop.
+    """
     os.makedirs(args.output_dir, exist_ok=True)
     model_extra_kwargs = {}
     if args.lora:
@@ -526,10 +587,11 @@ def run_training(args, max_steps, train_data, val_data):
         **extra_training_args,
     )
 
-    print(f"*** [{get_rank(args)}] Loading the model. ***")
+    print(
+        f"*** [{get_rank(args)}] Loading the model with '{args.objective}' objective ***")
 
     # disable caching mechanism when using gradient checkpointing
-    model = AutoModelForCausalLM.from_pretrained(
+    model = get_model_class(args).from_pretrained(
         args.model_path,
         revision=args.model_revision,
         trust_remote_code=True,
@@ -619,10 +681,3 @@ def run_training(args, max_steps, train_data, val_data):
     if args.save_best_model:
         print("Saving best model...")
         model.save_pretrained(os.path.join(args.output_dir, "best/"))
-
-
-def load_special_tokens(tokenizer):
-    thisFolder = os.path.dirname(os.path.abspath(__file__))
-    file = open(os.path.join(thisFolder, "special_tokens_map.json"))
-    special_tokens_map = json.load(file)
-    tokenizer.add_special_tokens(special_tokens_map)
