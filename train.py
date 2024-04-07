@@ -141,71 +141,111 @@ class BetterTrainer(Trainer):
 def get_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str,
-                        default="bigcode/starcoderbase")
-    parser.add_argument("--model_revision", type=str, default="main")
+                        default="bigcode/starcoderbase", help="Path to the model to train.")
+    parser.add_argument("--model_revision", type=str, default="main",
+                        help="Revision of the model to train, if on the hub.")
     parser.add_argument("--dataset_name", type=str,
-                        default="bigcode/starcoderdata")
-    parser.add_argument("--dataset_revision", type=str, default="main")
-    parser.add_argument("--subset", type=str, default=None)
-    parser.add_argument("--split", type=str, default="train")
-    parser.add_argument("--perc_valid_set", type=float, default=0.005)
-    parser.add_argument("--data_column", type=str, default="content")
-    parser.add_argument("--min_edu_score", type=float, default=0.0)
-    parser.add_argument("--edu_score_column", type=str)
-    parser.add_argument("--no_shuffle_train", action="store_true")
+                        default="bigcode/starcoderdata", help="Name of the dataset to train on.")
+    parser.add_argument("--dataset_revision", type=str, default="main",
+                        help="Revision of the dataset to train on, if on the hub.")
+    parser.add_argument("--subset", type=str, default=None,
+                        help="Subset of the dataset to use.")
+    parser.add_argument("--split", type=str, default="train",
+                        help="Split of the dataset to use.")
+    parser.add_argument("--perc_valid_set", type=float, default=0.005,
+                        help="Percentage of the dataset to use as validation set.")
+    parser.add_argument("--data_column", type=str, default="content",
+                        help="Column of the dataset to use as input.")
+    parser.add_argument("--min_edu_score", type=float, default=0.0,
+                        help="Minimum education score of the examples to use.")
+    parser.add_argument("--edu_score_column", type=str, default=None,
+                        help="Column of the dataset to use as education score.")
+    parser.add_argument("--no_shuffle_train", action="store_true",
+                        help="Do not shuffle the training set.")
 
-    parser.add_argument("--lora", action="store_true")
-    parser.add_argument("--lora_r", type=int, default=16)
-    parser.add_argument("--lora_alpha", type=int, default=32)
-    parser.add_argument("--lora_dropout", type=float, default=0.05)
-    parser.add_argument("--lora_bits", type=int, default=8)
-    parser.add_argument("--lora_extreme", action="store_true")
+    parser.add_argument("--lora", action="store_true", help="Enable LoRA.")
+    parser.add_argument("--lora_r", type=int, default=16, help="LoRA rank.")
+    parser.add_argument("--lora_alpha", type=int,
+                        default=32, help="LoRA alpha.")
+    parser.add_argument("--lora_dropout", type=float,
+                        default=0.05, help="LoRA dropout.")
+    parser.add_argument("--lora_bits", type=int, default=8,
+                        choices=[4, 8], help="LoRA quantization bits.")
+    parser.add_argument("--lora_extreme", action="store_true",
+                        help="Enable extreme quantization (QLoRA).")
 
-    parser.add_argument("--seq_length", type=int, default=1024)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=2)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=8)
+    parser.add_argument("--seq_length", type=int,
+                        default=4096, help="Sequence length (i.e. context window size).")
+    parser.add_argument("--epochs", type=int, default=10,
+                        help="Number of epochs.")
+    parser.add_argument("--batch_size", type=int,
+                        default=2, help="Batch size.")
+    parser.add_argument("--gradient_accumulation_steps",
+                        type=int, default=8, help="Gradient accumulation steps.")
     parser.add_argument("--total_tokens", type=int,
                         help="Total number of tokens in the dataset. If not provided, will be computed.")
-    parser.add_argument("--no_approx_tokens", action="store_true")
+    parser.add_argument("--no_approx_tokens", action="store_true",
+                        help="Disables token approximation.")
     parser.add_argument("--dataset_loader", type=str,
-                        default="constant", choices=["constant", "padded"])
-    parser.add_argument("--pad_token_id", type=int, default=None)
-    parser.add_argument("--trim_longer", action="store_true")
-    parser.add_argument("--mask_loss_till_token_id", type=int, default=None)
+                        default="constant", choices=["constant", "padded"],
+                        help="Dataset loader to use.")
+    parser.add_argument("--pad_token_id", type=int,
+                        default=None, help="Pad token id.")
+    parser.add_argument("--trim_longer", action="store_true",
+                        help="Trim longer sequences when using the padded dataset loader.")
+    parser.add_argument("--mask_loss_till_token_id", type=int, default=None,
+                        help="Allows to mask the loss until a certain token id.")
 
-    parser.add_argument("--learning_rate", type=float, default=5e-5)
-    parser.add_argument("--lr_scheduler_type", type=str, default="cosine")
-    parser.add_argument("--num_warmup_steps", type=int, default=100)
-    parser.add_argument("--weight_decay", type=float, default=0.05)
-    parser.add_argument("--attention_dropout", type=float, default=None)
-    parser.add_argument("--neft_alpha", type=float, default=None)
+    parser.add_argument("--learning_rate", type=float,
+                        default=5e-5, help="Learning rate.")
+    parser.add_argument("--lr_scheduler_type", type=str, default="linear", choices=[
+                        "cosine", "linear", "constant"], help="Learning rate scheduler type.")
+    parser.add_argument("--num_warmup_steps", type=int,
+                        default=100, help="Number of warmup steps.")
+    parser.add_argument("--weight_decay", type=float,
+                        default=0.05, help="Weight decay.")
+    parser.add_argument("--attention_dropout", type=float, default=None,
+                        help="Attention dropout -- may not be supported by all models.")
+    parser.add_argument("--neft_alpha", type=float,
+                        default=None, help="NEFTune noise alpha.")
 
     parser.add_argument("--local_rank", type=int, default=-1)
-    parser.add_argument("--no_fp16", action="store_false")
-    parser.add_argument("--bf16", action="store_true")
-    parser.add_argument("--torch_dtype", type=str, default=None)
-    parser.add_argument("--no_gradient_checkpointing", action="store_false")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--num_workers", type=int, default=None)
-    parser.add_argument("--output_dir", type=str, default="./checkpoints")
-    parser.add_argument("--log_freq", default=1, type=int)
-    parser.add_argument("--no_wandb", action="store_true")
+    parser.add_argument("--no_fp16", action="store_false",
+                        help="Disable fp16.")
+    parser.add_argument("--bf16", action="store_true", help="Use bfloat16.")
+    parser.add_argument("--torch_dtype", type=str, default=None, choices=[
+                        "float16", "bfloat16", "float32"], help="Force the model to use a certain dtype.")
+    parser.add_argument("--no_gradient_checkpointing", action="store_false",
+                        help="Disable gradient checkpointing.")
+    parser.add_argument("--seed", type=int, default=0, help="Random seed.")
+    parser.add_argument("--num_workers", type=int, default=None,
+                        help="Number of workers for the dataset loader.")
+    parser.add_argument("--output_dir", type=str, default="./checkpoints",
+                        help="Output directory for checkpoints.")
+    parser.add_argument("--log_freq", default=1, type=int,
+                        help="Frequency of logging (in steps).")
+    parser.add_argument("--no_wandb", action="store_true",
+                        help="Disable wandb logging.")
     parser.add_argument("--eval_freq", default=1.0, type=float,
-                        help="Evaluate X times per epoch, can be < 1")
+                        help="Evaluate X times per epoch, can be < 1.")
     parser.add_argument("--save_freq", default=1.0, type=float,
-                        help="Save X times per epoch, can be < 1")
+                        help="Save X times per epoch, can be < 1.")
 
-    parser.add_argument("--checkpoint", type=str, default=None)
-    parser.add_argument("--save_strategy", type=str, default="steps")
-    parser.add_argument("--save_total_limit", type=int, default=10)
-    parser.add_argument("--push_to_hub", type=str, default=None)
+    parser.add_argument("--checkpoint", type=str, default=None,
+                        help="Checkpoint to resume training from.")
+    parser.add_argument("--save_strategy", type=str, default="steps", choices=[
+                        "steps", "epoch"], help="Save strategy.")
+    parser.add_argument("--save_total_limit", type=int,
+                        default=10, help="Total number of checkpoints to save.")
+    parser.add_argument("--push_to_hub", type=str, default=None,
+                        help="Push the checkpoints to the hub and specify the repo name.")
     parser.add_argument("--local-rank", type=int, default=0)
-    parser.add_argument("--custom_tokenizer", type=str, default=None)
+    parser.add_argument("--custom_tokenizer", type=str,
+                        default=None, help="Path to a custom tokenizer.")
 
-    parser.add_argument("--humaneval_eval_loss", action="store_true")
+    parser.add_argument("--eval-dataset", type=str, default=None,
+                        help="Path to the evaluation dataset. Needs to have split='test' and follow same format as train.")
     parser.add_argument("--save_best_model", action="store_true")
-    parser.add_argument("--lang", type=str, default="lua")
 
     parser.add_argument("--deepspeed", type=str)
     parser.add_argument("--fa2", action="store_true")
@@ -282,16 +322,10 @@ def create_dataloaders(tokenizer, args, tqdm=True):
 
     dataset = load_source_dataset(args)
 
-    eval_dataset = None
-    if args.humaneval_eval_loss:
-        eval_dataset = load_dataset("nuprl/MultiPL-E-synthetic-solutions", split="train") \
-            .filter(lambda example: example["language"] == args.lang) \
-            .map(lambda example: {"content": example["prompt"] + example["solution"]})
-
-    if args.humaneval_eval_loss:
-        valid_data = eval_dataset
+    if args.eval_dataset:
+        valid_data = load_dataset(args.eval_dataset, split="test")
         train_data = dataset
-    elif args.perc_valid_set == 0:
+    if args.perc_valid_set == 0:
         train_data = dataset
         valid_data = None
     else:
@@ -303,7 +337,7 @@ def create_dataloaders(tokenizer, args, tqdm=True):
         train_data = train_data.filter(
             lambda example: example[args.edu_score_column] >= args.min_edu_score
         )
-        if not args.humaneval_eval_loss:
+        if not args.eval_dataset:
             assert valid_data is not None
             valid_data = valid_data.filter(
                 lambda example: example[args.edu_score_column] >= args.min_edu_score
@@ -362,7 +396,7 @@ def create_dataloaders(tokenizer, args, tqdm=True):
     effective_batch_size = args.batch_size * \
         args.gradient_accumulation_steps * num_gpus
     max_steps = max(1, int(training_examples /
-                    effective_batch_size * args.epochs))
+                           effective_batch_size * args.epochs))
 
     if is_main(args):
         print(f" #### SCALING LAWS ####")
