@@ -13,7 +13,7 @@ DATASET=$4
 NUM_GPUS=$5
 
 if [[ -z "${BATCH_SIZE}" ]]; then
-  V_BATCH_SIZE=20
+  V_BATCH_SIZE=200
 else
   V_BATCH_SIZE="$BATCH_SIZE"
 fi
