@@ -56,7 +56,7 @@ for dir in "${CHECKPOINT_DIRS[@]}"; do
         --batch-size $V_BATCH_SIZE \
         --temperature 0.2 \
         --output-dir $OUT_DIR \
-        --num_gpus $NUM_GPUS
+        --num-gpus $NUM_GPUS
   else
     python3 automodel_vllm.py \
         --name $dir \
@@ -67,7 +67,7 @@ for dir in "${CHECKPOINT_DIRS[@]}"; do
         --batch-size $V_BATCH_SIZE \
         --temperature 0.2 \
         --output-dir $OUT_DIR \
-        --num_gpus $NUM_GPUS
+        --num-gpus $NUM_GPUS
   fi
   echo "Running docker eval in background for $OUT_DIR"
   docker run --rm -d --network none --volume $OUT_DIR:/inputs:ro --volume $OUT_DIR:/outputs:rw multipl-e-evaluation --dir /inputs --output-dir /outputs
