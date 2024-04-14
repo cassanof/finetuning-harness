@@ -349,7 +349,7 @@ def dataset_splits(dataset, args) -> Tuple[Dataset, Optional[Dataset]]:
     if args.eval_dataset:
         valid_data = load_dataset(args.eval_dataset, split="test")
         train_data = dataset
-    if args.perc_valid_set == 0:
+    elif args.perc_valid_set == 0:
         train_data = dataset
         valid_data = None
     else:
@@ -625,11 +625,13 @@ def run_training(args, max_steps, train_data, val_data):
 
     if is_main(args) and not args.no_wandb:
         import wandb
-        date = time.strftime("%Y-%m-%d-%H-%M")
-        lora_str = "_lora" if args.lora else ""
-        model_name = args.model_path.rstrip("/").split("/")[-1]
-        dataset_name = args.dataset_name.rstrip("/").split("/")[-1]
-        wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
+        wandb_name = None
+        if not os.getenv("WANDB_NAME"):
+            date = time.strftime("%Y-%m-%d-%H-%M")
+            lora_str = "_lora" if args.lora else ""
+            model_name = args.model_path.rstrip("/").split("/")[-1]
+            dataset_name = args.dataset_name.rstrip("/").split("/")[-1]
+            wandb_name = f"{model_name}_{dataset_name}_{date}_{lora_str}"
         try:
             wandb.init(name=wandb_name)
         except Exception as e:
