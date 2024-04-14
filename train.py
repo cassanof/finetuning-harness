@@ -257,7 +257,7 @@ def get_arg_parser():
     parser.add_argument("--custom_tokenizer", type=str,
                         default=None, help="Path to a custom tokenizer.")
 
-    parser.add_argument("--eval-dataset", type=str, default=None,
+    parser.add_argument("--eval_dataset", type=str, default=None,
                         help="Path to the evaluation dataset. Needs to have split='test' and follow same format as train.")
     parser.add_argument("--save_best_model", action="store_true")
 
