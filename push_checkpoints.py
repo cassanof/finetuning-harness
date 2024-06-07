@@ -8,7 +8,7 @@ def push_checkpoints(chk_dir, base_repo, tokenizer=None):
     for path in pathlib.Path(chk_dir).rglob(f"checkpoint-*"):
         checkpoints.append(path.name)
 
-    dir_name = pathlib.Path(chk_dir).name
+    dir_name = pathlib.Path(chk_dir)
 
     if tokenizer:
         print(f"Pushing tokenizer from {tokenizer} to {base_repo}")
@@ -18,7 +18,7 @@ def push_checkpoints(chk_dir, base_repo, tokenizer=None):
         try:
             chk0 = checkpoints[0]
             print(f"Pushing tokenizer from {chk0} to {base_repo}")
-            tok = AutoTokenizer.from_pretrained(dir_name + "/" + chk0)
+            tok = AutoTokenizer.from_pretrained(dir_name / chk0)
             tok.push_to_hub(base_repo, private=True)
         except Exception as e:
             print(e)
@@ -31,7 +31,7 @@ def push_checkpoints(chk_dir, base_repo, tokenizer=None):
         print(
             f"Pushing {checkpoint} (epoch {epoch}) to {base_repo} - {commit}")
         m = AutoModelForCausalLM.from_pretrained(
-            dir_name + "/" + checkpoint,
+            dir_name / checkpoint,
             torch_dtype=torch.bfloat16
         )
         while True:
