@@ -115,8 +115,8 @@ class PaddedDataset(IterableDataset):
         if pad_token_id is not None:
             self.pad_token_id = pad_token_id
         elif self.tokenizer.pad_token_id is None:
-            # default to 0
-            self.pad_token_id = 0
+            # default to self.concat_token_id if pad_token_id is not set
+            self.pad_token_id = self.concat_token_id
         else:
             # we good, we have a pad token id preset
             self.pad_token_id = self.tokenizer.pad_token_id
