@@ -32,7 +32,8 @@ def push_checkpoints(chk_dir, base_repo, tokenizer=None):
             f"Pushing {checkpoint} (epoch {epoch}) to {base_repo} - {commit}")
         m = AutoModelForCausalLM.from_pretrained(
             dir_name / checkpoint,
-            torch_dtype=torch.bfloat16
+            torch_dtype=torch.bfloat16,
+            device_map="cpu"
         )
         while True:
             try:
